@@ -1194,13 +1194,19 @@ function AppContent() {
 
       // 2. Initialize Razorpay popup
       const options = {
-        key: 'rzp_test_Se91bWQi3nZ0tC', // Match backend key
+        key: 'rzp_live_SeGSjBujn5Tfjv',
         amount: orderData.order.amount,
         currency: "INR",
         name: "Graphique NITT",
         description: "OLT '26 Archival Transaction",
         image: PRODUCTS[0]?.image || "",
-        order_id: orderData.order.id, // Generate order_id from backend
+        order_id: orderData.order.id,
+        method: {
+          upi: true,
+          card: true,
+          netbanking: true,
+          wallet: true,
+        },
         handler: async function (response: any) {
           // 3. Complete Order on Server
           try {

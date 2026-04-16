@@ -21,6 +21,7 @@ dist-ssr/
 
 # Sensitive keys
 *.json
+*.csv
 !package.json
 !tsconfig.json
 !package-lock.json

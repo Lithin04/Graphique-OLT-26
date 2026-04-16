@@ -6,6 +6,20 @@ import { google } from 'googleapis';
 import Razorpay from 'razorpay';
 
 dotenv.config();
+// Try loading from backend/.env if not found in root
+dotenv.config({ path: 'backend/.env' });
+
+const spreadsheetId = process.env.SPREADSHEET_ID || '1LfK8kuq172eaDvsPLSswWzSu8h8vrMB5XMI-J9ket2c';
+const googleClientId = process.env.GOOGLE_CLIENT_ID || '1071467950240-os0gsqd8scogivkfvnh9ckubj228ng1q.apps.googleusercontent.com';
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_live_SeGSjBujn5Tfjv';
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || 'PfYDmgQ6XsOAi23q0Kk7nc4z';
+
+console.log('--- Environment Diagnostics ---');
+console.log('SPREADSHEET_ID:', process.env.SPREADSHEET_ID ? 'PRESENT' : 'USING FALLBACK');
+console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'PRESENT' : 'USING FALLBACK');
+console.log('RAZORPAY_KEY_ID:', process.env.RAZORPAY_KEY_ID ? 'PRESENT' : 'USING FALLBACK');
+console.log('SERVICE_ACCOUNT:', (process.env.GOOGLE_SERVICE_ACCOUNT_JSON || process.env.SERVICE_ACCOUNT_PATH || './service-account.json') ? 'PRESENT' : 'MISSING');
+console.log('-------------------------------');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -27,7 +41,7 @@ const getGoogleAuth = () => {
       console.error('Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON:', e);
     }
   }
-  
+
   // Fallback to file path for local development
   const serviceAccountPath = process.env.SERVICE_ACCOUNT_PATH || './service-account.json';
   return new google.auth.GoogleAuth({
@@ -38,30 +52,27 @@ const getGoogleAuth = () => {
 
 // Diagnostic endpoint
 app.get('/api/debug', async (req, res) => {
-  const spreadsheetId = process.env.SPREADSHEET_ID;
-  
   try {
     const auth = getGoogleAuth();
     const sheets = google.sheets({ version: 'v4', auth });
     const response = await sheets.spreadsheets.get({ spreadsheetId });
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: 'Connected to Google Sheets API!',
       sheets: response.data.sheets?.map(s => s.properties?.title),
       serviceAccount: 'authenticated'
     });
   } catch (error: any) {
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: error.message,
       details: error.response?.data?.error || 'No detailed error message'
     });
   }
 });
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '1071467950240-os0gsqd8scogivkfvnh9ckubj228ng1q.apps.googleusercontent.com';
-const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+const client = new OAuth2Client(googleClientId);
 
 // Verify Google Token
 app.post('/api/auth/google', async (req, res) => {
@@ -82,7 +93,7 @@ app.post('/api/auth/google', async (req, res) => {
 // Save or Update Order in Google Sheets
 app.post('/api/orders', async (req, res) => {
   const { orderId, paymentId, userName, userEmail, phone, teeDetails, varsityDetails, slamDetails, totalPrice, status } = req.body;
-  
+
   try {
     const auth = getGoogleAuth();
     const sheets = google.sheets({ version: 'v4', auth });
@@ -94,7 +105,7 @@ app.post('/api/orders', async (req, res) => {
     });
 
     let rows = response.data.values || [];
-    
+
     // Auto-initialize headers if sheet is empty
     if (rows.length === 0) {
       console.log('Sheet is empty. Initializing headers...');
@@ -115,15 +126,15 @@ app.post('/api/orders', async (req, res) => {
     }
 
     const rowData = [
-      new Date().toISOString(), 
-      orderId, 
-      userName, 
-      userEmail, 
-      phone || '', 
-      teeDetails || '', 
+      new Date().toISOString(),
+      orderId,
+      userName,
+      userEmail,
+      phone || '',
+      teeDetails || '',
       varsityDetails || '',
       slamDetails || '',
-      totalPrice, 
+      totalPrice,
       status || 'InCart',
       paymentId || ''
     ];
@@ -159,10 +170,10 @@ app.post('/api/orders', async (req, res) => {
     if (error.response) {
       console.error('API Response Error:', error.response.data);
     }
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to sync with Google Sheets',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -205,8 +216,8 @@ app.post('/api/payment/create-order', async (req, res) => {
   try {
     const { amount } = req.body;
     const razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_Se91bWQi3nZ0tC',
-      key_secret: process.env.RAZORPAY_KEY_SECRET || 'yEbdycBwC4J3eU8aOHV3S1tc'
+      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_live_SeGSjBujn5Tfjv',
+      key_secret: process.env.RAZORPAY_KEY_SECRET || 'PfYDmgQ6XsOAi23q0Kk7nc4z'
     });
     const options = {
       amount: parseInt(amount) * 100,
