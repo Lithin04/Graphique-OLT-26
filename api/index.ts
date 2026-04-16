@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
+import Razorpay from 'razorpay';
 
 dotenv.config();
 
@@ -79,7 +80,7 @@ app.post('/api/auth/google', async (req, res) => {
 
 // Save or Update Order in Google Sheets
 app.post('/api/orders', async (req, res) => {
-  const { orderId, userName, userEmail, phone, items, totalPrice, status } = req.body;
+  const { orderId, paymentId, userName, userEmail, phone, items, totalPrice, status } = req.body;
   
   try {
     const auth = getGoogleAuth();
@@ -88,7 +89,7 @@ app.post('/api/orders', async (req, res) => {
     console.log(`Searching for InCart draft for ${userEmail}...`);
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Sheet1!A:H',
+      range: 'Sheet1!A:I',
     });
 
     let rows = response.data.values || [];
@@ -96,10 +97,10 @@ app.post('/api/orders', async (req, res) => {
     // Auto-initialize headers if sheet is empty
     if (rows.length === 0) {
       console.log('Sheet is empty. Initializing headers...');
-      const headers = ['Timestamp', 'Order ID', 'User Name', 'User Email', 'Phone', 'Items', 'Total Price', 'Status'];
+      const headers = ['Timestamp', 'Order ID', 'User Name', 'User Email', 'Phone', 'Items', 'Total Price', 'Status', 'Payment ID'];
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: 'Sheet1!A1:H1',
+        range: 'Sheet1!A1:I1',
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [headers] },
       });
@@ -119,12 +120,13 @@ app.post('/api/orders', async (req, res) => {
       phone || '', 
       items, 
       totalPrice, 
-      status || 'InCart'
+      status || 'InCart',
+      paymentId || ''
     ];
 
     if (rowIndex !== -1) {
       console.log(`Found existing draft at row ${rowIndex + 1}. Updating...`);
-      const range = `Sheet1!A${rowIndex + 1}:H${rowIndex + 1}`;
+      const range = `Sheet1!A${rowIndex + 1}:I${rowIndex + 1}`;
       await sheets.spreadsheets.values.update({
         spreadsheetId,
         range,
@@ -138,7 +140,7 @@ app.post('/api/orders', async (req, res) => {
       console.log(`No existing draft found. Appending new row...`);
       await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'Sheet1!A:H',
+        range: 'Sheet1!A:I',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [rowData],
@@ -170,7 +172,7 @@ app.get('/api/orders', async (req, res) => {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Sheet1!A:H',
+      range: 'Sheet1!A:I',
     });
 
     const rows = response.data.values;
@@ -192,6 +194,26 @@ app.get('/api/orders', async (req, res) => {
   } catch (error) {
     console.error('Sheets Fetch Error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch order history' });
+  }
+});
+
+app.post('/api/payment/create-order', async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_Se91bWQi3nZ0tC',
+      key_secret: process.env.RAZORPAY_KEY_SECRET || 'yEbdycBwC4J3eU8aOHV3S1tc'
+    });
+    const options = {
+      amount: parseInt(amount) * 100,
+      currency: "INR",
+      receipt: `rcpt_${Date.now()}`
+    };
+    const order = await razorpay.orders.create(options);
+    res.json({ success: true, order });
+  } catch (error: any) {
+    console.error("Razorpay Error:", error);
+    res.status(500).json({ success: false, error: 'Razorpay order creation failed' });
   }
 });
 

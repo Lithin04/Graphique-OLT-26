@@ -682,12 +682,7 @@ const VaultView = ({
                 <span>₹{total.toFixed(2)}</span>
               </div>
             </div>
-            <div className="space-y-4 mb-8">
-              <label className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant block">Vault Access Code</label>
-              <div className="flex gap-2">
-                <input className="flex-grow bg-surface-container-low border-none rounded-lg px-4 text-xs tracking-widest uppercase focus:ring-1 focus:ring-primary/20" placeholder="DISCOUNT" type="text" />
-                <button className="bg-secondary text-on-secondary px-4 py-2 rounded-lg font-label text-xs uppercase tracking-widest hover:brightness-110 transition-all">Apply</button>
-              </div>
+            <div className="space-y-4 mb-8 hidden">
             </div>
             <button 
               onClick={onCheckout}
@@ -982,34 +977,84 @@ function AppContent() {
       setNotification("Please sign in to preserve artifacts");
       return;
     }
+    if (!phone || !address || !fullName) {
+      setNotification("Please fill in all Preservation Registry details.");
+      return;
+    }
 
     const total = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
 
     try {
-      const response = await fetch(`${API_BASE}/orders`, {
+      // 1. Create Order on Server
+      const orderResponse = await fetch(`${API_BASE}/payment/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: `ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-          userName: fullName || user.name,
-          userEmail: user.email,
-          phone,
-          items: cart.map(i => `${i.product.name} (x${i.quantity})`).join(', '),
-          totalPrice: `₹${total}`,
-          status: 'PaymentDone'
-        }),
+        body: JSON.stringify({ amount: total }),
       });
-
-      const data = await response.json();
-      if (data.success) {
-        setView('success');
-        setCart([]);
-        localStorage.removeItem('cart');
-      } else {
-        setNotification(data.error || "Failed to sync with archival database");
+      const orderData = await orderResponse.json();
+      
+      if (!orderData.success) {
+        setNotification("Failed to initialize secure payment.");
+        return;
       }
+
+      // 2. Initialize Razorpay popup
+      const options = {
+        key: 'rzp_test_Se91bWQi3nZ0tC', // Match backend key
+        amount: orderData.order.amount,
+        currency: "INR",
+        name: "Graphique NITT",
+        description: "OLT '26 Archival Transaction",
+        image: PRODUCTS[0]?.image || "",
+        order_id: orderData.order.id, // Generate order_id from backend
+        handler: async function (response: any) {
+          // 3. Complete Order on Server
+          try {
+            const finalResponse = await fetch(`${API_BASE}/orders`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: orderData.order.id,
+                paymentId: response.razorpay_payment_id,
+                userName: fullName,
+                userEmail: user.email,
+                phone,
+                items: cart.map(i => `${i.product.name} (x${i.quantity})`).join(', '),
+                totalPrice: `₹${total}`,
+                status: 'PaymentDone'
+              }),
+            });
+
+            const finalData = await finalResponse.json();
+            if (finalData.success) {
+              setView('success');
+              setCart([]);
+              localStorage.removeItem('cart');
+            } else {
+              setNotification(finalData.error || "Failed to finalize database sync");
+            }
+          } catch (err) {
+            setNotification("Archive synchronization failed during payment completion");
+          }
+        },
+        prefill: {
+          name: fullName,
+          email: user.email,
+          contact: phone
+        },
+        theme: {
+          color: "#E2AA45"
+        }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function (response: any) {
+        setNotification(`Payment Failed: ${response.error.description}`);
+      });
+      rzp.open();
+      
     } catch (err) {
-      setNotification("Archive synchronization failed");
+      setNotification("Failed to connect to the payment gateway.");
     }
   };
 
