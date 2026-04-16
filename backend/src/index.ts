@@ -12,16 +12,35 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Helper to get Google Auth
+const getGoogleAuth = () => {
+  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (serviceAccountJson) {
+    try {
+      const credentials = JSON.parse(serviceAccountJson);
+      return new google.auth.GoogleAuth({
+        credentials,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      });
+    } catch (e) {
+      console.error('Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON:', e);
+    }
+  }
+  
+  // Fallback to file path for local development
+  const serviceAccountPath = process.env.SERVICE_ACCOUNT_PATH || './service-account.json';
+  return new google.auth.GoogleAuth({
+    keyFile: serviceAccountPath,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+};
+
 // Diagnostic endpoint
 app.get('/api/debug', async (req, res) => {
-  const serviceAccountPath = process.env.SERVICE_ACCOUNT_PATH || './service-account.json';
   const spreadsheetId = process.env.SPREADSHEET_ID;
   
   try {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: serviceAccountPath,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
+    const auth = getGoogleAuth();
     const sheets = google.sheets({ version: 'v4', auth });
     const response = await sheets.spreadsheets.get({ spreadsheetId });
     
@@ -29,7 +48,7 @@ app.get('/api/debug', async (req, res) => {
       success: true, 
       message: 'Connected to Google Sheets API!',
       sheets: response.data.sheets?.map(s => s.properties?.title),
-      serviceAccount: 'sheets@avid-influence-339407.iam.gserviceaccount.com'
+      serviceAccount: 'authenticated'
     });
   } catch (error: any) {
     res.status(500).json({ 
@@ -62,14 +81,8 @@ app.post('/api/auth/google', async (req, res) => {
 app.post('/api/orders', async (req, res) => {
   const { orderId, userName, userEmail, phone, items, totalPrice, status } = req.body;
   
-  const serviceAccountPath = process.env.SERVICE_ACCOUNT_PATH || './service-account.json';
-  
   try {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: serviceAccountPath,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
+    const auth = getGoogleAuth();
     const sheets = google.sheets({ version: 'v4', auth });
     const spreadsheetId = process.env.SPREADSHEET_ID;
     console.log(`Searching for InCart draft for ${userEmail}...`);
@@ -150,14 +163,8 @@ app.post('/api/orders', async (req, res) => {
 
 // Fetch Orders from Google Sheets
 app.get('/api/orders', async (req, res) => {
-  const serviceAccountPath = process.env.SERVICE_ACCOUNT_PATH || './service-account.json';
-
   try {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: serviceAccountPath,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
-
+    const auth = getGoogleAuth();
     const sheets = google.sheets({ version: 'v4', auth });
     const spreadsheetId = process.env.SPREADSHEET_ID;
 

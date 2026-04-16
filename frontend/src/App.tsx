@@ -30,8 +30,8 @@ import { Product, CartItem, Bundle } from './types';
 import { GoogleOAuthProvider, GoogleLogin, googleLogout } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 
-const API_BASE = 'http://localhost:5000/api';
-const GOOGLE_CLIENT_ID = '1071467950240-os0gsqd8scogivkfvnh9ckubj228ng1q.apps.googleusercontent.com';
+const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1071467950240-os0gsqd8scogivkfvnh9ckubj228ng1q.apps.googleusercontent.com';
 
 // --- Components ---
 
