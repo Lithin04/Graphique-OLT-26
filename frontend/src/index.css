@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&family=Work+Sans:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-headline: "Epilogue", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-label: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-tertiary-fixed-dim: #ffb4a4;
+  --color-surface-dim: #e7d8bf;
+  --color-on-primary-fixed: #3b0900;
+  --color-secondary-fixed-dim: #fabc50;
+  --color-surface-variant: #f0e1c7;
+  --color-primary-fixed-dim: #ffb5a0;
+  --color-primary-container: #c54f2c;
+  --color-on-secondary-container: #724d00;
+  --color-on-secondary: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-error: #ffffff;
+  --color-on-surface-variant: #58423c;
+  --color-on-tertiary-fixed: #3d0600;
+  --color-secondary-container: #fdbe52;
+  --color-inverse-surface: #382f1e;
+  --color-on-tertiary-fixed-variant: #812714;
+  --color-tertiary-fixed: #ffdad3;
+  --color-background: #fff8f2;
+  --color-on-tertiary-container: #fffbff;
+  --color-on-surface: #221b0b;
+  --color-outline-variant: #dfc0b7;
+  --color-on-tertiary: #ffffff;
+  --color-on-primary-fixed-variant: #862201;
+  --color-on-primary-container: #fffbff;
+  --color-surface-container: #fbecd2;
+  --color-inverse-on-surface: #feefd5;
+  --color-primary: #a43716;
+  --color-on-secondary-fixed-variant: #604100;
+  --color-on-background: #221b0b;
+  --color-tertiary-container: #be543c;
+  --color-surface-bright: #fff8f2;
+  --color-surface-container-high: #f5e6cc;
+  --color-on-error-container: #93000a;
+  --color-surface-container-highest: #f0e1c7;
+  --color-surface: #fff8f2;
+  --color-error-container: #ffdad6;
+  --color-secondary-fixed: #ffdead;
+  --color-outline: #8b716a;
+  --color-inverse-primary: #ffb5a0;
+  --color-error: #ba1a1a;
+  --color-tertiary: #9e3c27;
+  --color-surface-container-low: #fff2dd;
+  --color-secondary: #7f5700;
+  --color-primary-fixed: #ffdbd1;
+  --color-on-primary: #ffffff;
+  --color-on-secondary-fixed: #281900;
+  --color-surface-tint: #a73918;
+
+  --radius-DEFAULT: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-on-surface font-body selection:bg-secondary-container selection:text-on-secondary-container;
+    background-image: radial-gradient(#dfc0b7 0.5px, transparent 0.5px);
+    background-size: 24px 24px;
+  }
+}
+
+.grain-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.04;
+  background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuAN9gQZ_T3rO-iGiRLnSwl-TrOOKfdPxxdEu-lOQoTtGjB7QT8iEpGDoj4u-ca8vhe2bmaTKvNN6y8VE9Dgb2lO9Im_imN5AfP9nYhMlQhs0o42zyvtTeG-VB-9Tq79NtrJ3uyzgW4evuuFyu2gi4DRqTPPYWwgziwGw3lvVQzeT4FYZmz7GlRUljMBZ3HEMh3nU-vY40QYdyJ4HeD4fGDoqwtK_luaF-_ELnwU_vfZ2aJKODzUh0NEyzNTdQlD-CF7AOd5aKR84dw);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
