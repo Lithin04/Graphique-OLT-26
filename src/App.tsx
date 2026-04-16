@@ -128,6 +128,98 @@ const HorizontalScroller = ({ children, title, subtitle, animate = false }: { ch
   );
 };
 
+const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onClose: () => void, onAddToCart: (p: Product) => void }) => {
+  const [currentImg, setCurrentImg] = useState(0);
+  const [isZoomed, setIsZoomed] = useState(false);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-8"
+    >
+      <div className="absolute inset-0 bg-background/40 backdrop-blur-2xl" onClick={onClose} />
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="relative bg-surface-container-highest/90 border border-outline-variant/30 rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-full max-h-[85vh] z-10"
+      >
+        <button onClick={onClose} className="absolute top-6 right-6 z-20 p-2 bg-background/50 backdrop-blur-md rounded-full text-primary hover:scale-110 transition-transform">
+          <X className="w-6 h-6" />
+        </button>
+
+        {/* Image Section */}
+        <div className="md:w-3/5 relative bg-black/10 flex items-center justify-center overflow-hidden h-64 md:h-auto select-none">
+          <AnimatePresence mode="wait">
+            <motion.img 
+              key={currentImg}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              src={product.images[currentImg]} 
+              alt={product.name}
+              className={`w-full h-full object-contain transition-transform duration-500 cursor-zoom-in ${isZoomed ? 'scale-150' : 'scale-100'}`}
+              onClick={() => setIsZoomed(!isZoomed)}
+            />
+          </AnimatePresence>
+          
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+            {product.images.map((_, idx) => (
+              <div 
+                key={idx} 
+                onClick={() => setCurrentImg(idx)}
+                className={`w-2 h-2 rounded-full cursor-pointer transition-all ${idx === currentImg ? 'bg-primary w-6' : 'bg-primary/20'}`} 
+              />
+            ))}
+          </div>
+
+          <button onClick={(e) => { e.stopPropagation(); setCurrentImg(prev => (prev - 1 + product.images.length) % product.images.length); }} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-all">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); setCurrentImg(prev => (prev + 1) % product.images.length); }} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-all">
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Info Section */}
+        <div className="md:w-2/5 p-8 flex flex-col h-full overflow-y-auto">
+          <div className="flex-grow">
+            <span className="font-label text-xs uppercase tracking-[0.3em] text-secondary mb-2 block">{product.category} — OLT '26</span>
+            <h2 className="font-headline text-3xl text-primary font-bold tracking-tighter mb-4">{product.name}</h2>
+            <p className="font-body text-primary/80 leading-relaxed mb-8 italic">
+              {product.longDescription || product.description}
+            </p>
+
+            <div className="space-y-4 mb-8">
+              <div className="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+                <span className="text-xs uppercase font-bold tracking-widest opacity-60">Price</span>
+                <span className="font-headline text-2xl text-primary">₹{product.price}</span>
+              </div>
+              <div className="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+                <span className="text-xs uppercase font-bold tracking-widest opacity-60">Color</span>
+                <span className="text-sm font-medium">{product.color}</span>
+              </div>
+              <div className="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+                <span className="text-xs uppercase font-bold tracking-widest opacity-60">Material</span>
+                <span className="text-sm font-medium">{product.material}</span>
+              </div>
+            </div>
+          </div>
+
+          <button 
+            onClick={() => { onAddToCart(product); onClose(); }}
+            className="w-full py-4 bg-primary text-on-primary rounded-xl font-headline text-lg uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg mt-auto"
+          >
+            Add to Ritual
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 const Header = ({ onCartClick, onLogoClick, onOrdersClick, cartCount, user, onLogin, onLogout }: { 
   onCartClick: () => void, 
   onLogoClick: () => void, 
@@ -243,7 +335,15 @@ const IntroView = ({ onComplete, key }: { onComplete: () => void, key?: string }
   );
 };
 
-const StorefrontView = ({ onAddToCart, onAddBundle, key }: { onAddToCart: (p: Product) => void, onAddBundle: (b: Bundle) => void, key?: string }) => {
+const StorefrontView = ({ onAddToCart, onAddBundle, heroIndex, onHeroNext, onHeroPrev, setHeroIndex, onProductClick }: { 
+  onAddToCart: (p: Product) => void, 
+  onAddBundle: (b: Bundle) => void,
+  heroIndex: number,
+  onHeroNext: () => void,
+  onHeroPrev: () => void,
+  setHeroIndex: (i: number) => void,
+  onProductClick: (p: Product) => void
+}) => {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -252,34 +352,76 @@ const StorefrontView = ({ onAddToCart, onAddBundle, key }: { onAddToCart: (p: Pr
       className="pb-24"
     >
       {/* Hero Section */}
-      <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center overflow-hidden">
+      <section className="relative h-[85vh] min-h-[700px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
-          <h2 className="font-headline font-black text-primary/5 uppercase tracking-tighter text-[25vw] -rotate-12 italic whitespace-nowrap">LEGACY</h2>
+          <h2 className="font-headline font-black text-primary/5 uppercase tracking-tighter text-[20vw] -rotate-12 italic whitespace-nowrap select-none">2026 OLT</h2>
         </div>
-        <div className="container mx-auto px-6 relative z-10 flex justify-center items-center">
-          <motion.img 
-            initial={{ scale: 0.9, rotate: 5 }}
-            animate={{ scale: 1, rotate: 3 }}
-            whileHover={{ rotate: 0, scale: 1.05 }}
-            transition={{ duration: 0.7 }}
-            alt="Hero Product" 
-            className="w-full max-w-md drop-shadow-2xl rounded-2xl grayscale-[5%]" 
-            src={PRODUCTS[0].image} 
-          />
+        
+        <div className="container mx-auto px-6 relative z-10 flex flex-col items-center">
+          <div className="relative w-full max-w-lg aspect-square flex items-center justify-center group">
+            <AnimatePresence mode="wait">
+              <motion.img 
+                key={heroIndex}
+                initial={{ opacity: 0, scale: 0.9, rotate: -3 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, scale: 1.1, rotate: 3 }}
+                transition={{ duration: 0.8, ease: "circOut" }}
+                alt={PRODUCTS[heroIndex].name}
+                className="w-full h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-3xl cursor-pointer" 
+                src={PRODUCTS[heroIndex].image} 
+                onClick={() => onProductClick(PRODUCTS[heroIndex])}
+              />
+            </AnimatePresence>
+
+            {/* Float Arrows */}
+            <button 
+              onClick={(e) => { e.stopPropagation(); onHeroPrev(); }}
+              className="absolute -left-4 md:-left-12 top-1/2 -translate-y-1/2 p-4 bg-background/50 backdrop-blur-xl rounded-full border border-outline-variant/20 text-primary opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-on-primary shadow-xl"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onHeroNext(); }}
+              className="absolute -right-4 md:-right-12 top-1/2 -translate-y-1/2 p-4 bg-background/50 backdrop-blur-xl rounded-full border border-outline-variant/20 text-primary opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-on-primary shadow-xl"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="mt-12 text-center max-w-2xl">
+            <motion.div
+              key={`text-${heroIndex}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
+              <h2 className="font-headline text-4xl md:text-6xl text-primary font-bold tracking-tighter uppercase">{PRODUCTS[heroIndex].name}</h2>
+              <p className="font-body text-xl text-secondary tracking-wide italic">{PRODUCTS[heroIndex].description}</p>
+            </motion.div>
+          </div>
         </div>
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-20">
-          <div className="w-3 h-3 rounded-full bg-primary"></div>
-          <div className="w-3 h-3 rounded-full bg-primary/20"></div>
-          <div className="w-3 h-3 rounded-full bg-primary/20"></div>
+
+        {/* Dots */}
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-4 z-20">
+          {PRODUCTS.map((_, idx) => (
+            <button 
+              key={idx}
+              onClick={() => setHeroIndex(idx)}
+              className={`h-1.5 rounded-full transition-all duration-500 ${idx === heroIndex ? 'bg-primary w-12' : 'bg-primary/20 w-4'}`} 
+            />
+          ))}
         </div>
       </section>
 
       {/* Limited Drop */}
       <section className="max-w-7xl mx-auto px-6 lg:px-8 mb-32 mt-12">
-        <HorizontalScroller title="Limited Drop" animate>
+        <HorizontalScroller title="Class of 2026 Highlights" subtitle="The official Graphique NITT memorabilia collection." animate>
           {PRODUCTS.map(product => (
             <div key={product.id} className="group flex-shrink-0 w-80 snap-start">
-              <div className="bg-surface-container-high rounded-xl p-4 overflow-hidden">
+              <div 
+                className="bg-surface-container-high rounded-xl p-4 overflow-hidden cursor-pointer"
+                onClick={() => onProductClick(product)}
+              >
                 <img 
                   alt={product.name} 
                   className="w-full aspect-square object-cover rounded-lg group-hover:scale-105 transition-transform duration-700" 
@@ -287,7 +429,7 @@ const StorefrontView = ({ onAddToCart, onAddBundle, key }: { onAddToCart: (p: Pr
                 />
               </div>
               <div className="mt-4 flex justify-between items-start">
-                <div>
+                <div className="cursor-pointer" onClick={() => onProductClick(product)}>
                   <h3 className="font-headline text-xl text-primary uppercase">{product.name}</h3>
                   <p className="text-on-surface-variant text-sm mt-1">{product.description}</p>
                 </div>
@@ -309,18 +451,18 @@ const StorefrontView = ({ onAddToCart, onAddBundle, key }: { onAddToCart: (p: Pr
         <div className="absolute -right-24 -top-24 w-96 h-96 bg-primary-container rounded-full blur-3xl opacity-30"></div>
         <div className="max-w-4xl mx-auto text-center">
           <span className="font-label text-xs uppercase tracking-[0.3em] opacity-70 mb-8 block">Preserving the Frequency</span>
-          <h2 className="font-headline text-5xl md:text-7xl italic leading-tight mb-10">THE STUDIO NEVER TRULY CLOSES.</h2>
+          <h2 className="font-headline text-5xl md:text-7xl italic leading-tight mb-10 uppercase tracking-tighter">THE STUDIO NEVER TRULY CLOSES.</h2>
           <div className="grid md:grid-cols-2 gap-12 text-left">
             <p className="font-body text-xl opacity-90 leading-relaxed italic">
-              The Archivist was never just a collective; it was the hum of fluorescent lights at 2 AM, the smell of fresh ink on heavy cardstock, and the unspoken pact to create something that outlasted our time together. 
+              Graphique is not just a club at NITT; it was the hum of fluorescent lights at 2 AM, the smell of fresh ink on heavy cardstock, and the unspoken pact to create something that outlasted our time together. 
             </p>
             <p className="font-body text-xl opacity-90 leading-relaxed italic">
-              As we turn the page on the Class of '24, we offer these artifacts—not as mere merchandise, but as containers for the legacy we built. Every stitch, every page, every fiber is meant to keep the light from fading.
+              As we turn the page for the Class of 2026, we offer these OLT artifacts—not as mere merchandise, but as containers for the legacy we built. Every stitch, every page, every fiber is meant to keep the light from fading.
             </p>
           </div>
           <div className="mt-16 flex justify-center items-center gap-6">
             <div className="w-24 h-[1px] bg-on-primary/30"></div>
-            <span className="font-label text-xs uppercase tracking-widest opacity-60 italic">Established 1978 — Final Roll 2024</span>
+            <span className="font-label text-xs uppercase tracking-widest opacity-60 italic">Established Graphique NITT — OLT '26</span>
             <div className="w-24 h-[1px] bg-on-primary/30"></div>
           </div>
         </div>
@@ -358,21 +500,26 @@ const StorefrontView = ({ onAddToCart, onAddBundle, key }: { onAddToCart: (p: Pr
 
       {/* Radio Widget */}
       <div className="fixed bottom-8 left-8 z-50">
-        <div className="bg-background/90 backdrop-blur-md p-4 rounded-xl shadow-[0_12px_32px_rgba(34,27,11,0.12)] border border-outline-variant/20 flex items-center gap-4 w-64 group">
+        <div 
+          onClick={() => setIsPlaying(!isPlaying)}
+          className="bg-background/90 backdrop-blur-md p-4 rounded-xl shadow-[0_12px_32px_rgba(34,27,11,0.12)] border border-outline-variant/20 flex items-center gap-4 w-72 group cursor-pointer transition-all hover:scale-105"
+        >
           <div className="w-12 h-12 bg-secondary-container rounded-lg flex items-center justify-center relative overflow-hidden">
-            <Radio className="text-on-secondary-container w-6 h-6 animate-pulse" />
+            <Radio className={`text-on-secondary-container w-6 h-6 ${isPlaying ? 'animate-pulse' : ''}`} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-label text-[10px] text-primary uppercase font-bold tracking-widest truncate">Now Playing</p>
-            <p className="font-body text-xs text-on-surface truncate font-medium">Studio Memories — Vol. 24</p>
+            <p className="font-label text-[10px] text-primary uppercase font-bold tracking-widest truncate">ARCHIVE RADIO — OLT '26</p>
+            <p className="font-body text-xs text-on-surface truncate font-medium">
+              Side {currentSong + 1}: {currentSong === 0 ? "Woh Din" : "Mustafa Mustafa"}
+            </p>
             <div className="flex gap-1 mt-1">
-              <div className="h-1 w-1 bg-primary rounded-full"></div>
-              <div className="h-1 w-1 bg-primary/40 rounded-full"></div>
-              <div className="h-1 w-1 bg-primary/20 rounded-full"></div>
+              <div className={`h-1 w-1 bg-primary rounded-full transition-all ${isPlaying ? 'animate-bounce' : 'opacity-20'}`}></div>
+              <div className={`h-1 w-1 bg-primary/40 rounded-full transition-all ${isPlaying ? 'animate-bounce delay-75' : 'opacity-20'}`}></div>
+              <div className={`h-1 w-1 bg-primary/20 rounded-full transition-all ${isPlaying ? 'animate-bounce delay-150' : 'opacity-20'}`}></div>
             </div>
           </div>
           <button className="text-secondary hover:text-primary transition-colors">
-            <PauseCircle className="w-6 h-6" />
+            {isPlaying ? <PauseCircle className="w-6 h-6" /> : <div className="w-6 h-6 border-2 border-primary rounded-full flex items-center justify-center"><div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-primary border-b-[4px] border-b-transparent ml-0.5"></div></div>}
           </button>
         </div>
       </div>
@@ -656,6 +803,51 @@ function AppContent() {
   const [fullName, setFullName] = useState<string>('');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'saved' | 'error'>('idle');
   const [syncError, setSyncError] = useState<string | null>(null);
+  
+  // Audio State
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentSong, setCurrentSong] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const songs = ['/assets/song1.mp3', '/assets/song2.mp3'];
+
+  // Hero Slider State
+  const [heroIndex, setHeroIndex] = useState(0);
+
+  // Product Modal State
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // Audio Logic
+  useEffect(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio(songs[currentSong]);
+      audioRef.current.onended = () => {
+        setCurrentSong(prev => (prev + 1) % songs.length);
+      };
+    } else {
+      audioRef.current.src = songs[currentSong];
+      if (isPlaying) audioRef.current.play().catch(e => console.log("Autoplay blocked"));
+    }
+    
+    return () => {
+      audioRef.current?.pause();
+    };
+  }, [currentSong]);
+
+  useEffect(() => {
+    if (isPlaying) {
+      audioRef.current?.play().catch(e => console.log("Autoplay blocked"));
+    } else {
+      audioRef.current?.pause();
+    }
+  }, [isPlaying]);
+
+  // Hero Auto-scroll
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeroIndex(prev => (prev + 1) % PRODUCTS.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
@@ -851,7 +1043,16 @@ function AppContent() {
             
             <AnimatePresence mode="wait">
               {view === 'store' ? (
-                <StorefrontView key="store" onAddToCart={addToCart} onAddBundle={addBundleToCart} />
+                <StorefrontView 
+                  key="store" 
+                  onAddToCart={addToCart} 
+                  onAddBundle={addBundleToCart}
+                  heroIndex={heroIndex}
+                  onHeroNext={() => setHeroIndex(prev => (prev + 1) % PRODUCTS.length)}
+                  onHeroPrev={() => setHeroIndex(prev => (prev - 1 + PRODUCTS.length) % PRODUCTS.length)}
+                  setHeroIndex={setHeroIndex}
+                  onProductClick={setSelectedProduct}
+                />
               ) : view === 'vault' ? (
                 <VaultView 
                   key="vault" 
@@ -909,6 +1110,15 @@ function AppContent() {
             <Sparkles className="w-4 h-4" />
             {notification}
           </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {selectedProduct && (
+          <ProductModal 
+            product={selectedProduct} 
+            onClose={() => setSelectedProduct(null)} 
+            onAddToCart={addToCart}
+          />
         )}
       </AnimatePresence>
     </div>
