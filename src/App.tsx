@@ -335,14 +335,21 @@ const IntroView = ({ onComplete, key }: { onComplete: () => void, key?: string }
   );
 };
 
-const StorefrontView = ({ onAddToCart, onAddBundle, heroIndex, onHeroNext, onHeroPrev, setHeroIndex, onProductClick }: { 
+const StorefrontView = ({ 
+  onAddToCart, onAddBundle, heroIndex, onHeroNext, onHeroPrev, setHeroIndex, onProductClick, 
+  isPlaying, setIsPlaying, currentSong, key 
+}: { 
   onAddToCart: (p: Product) => void, 
   onAddBundle: (b: Bundle) => void,
   heroIndex: number,
   onHeroNext: () => void,
   onHeroPrev: () => void,
   setHeroIndex: (i: number) => void,
-  onProductClick: (p: Product) => void
+  onProductClick: (p: Product) => void,
+  isPlaying: boolean,
+  setIsPlaying: (b: boolean) => void,
+  currentSong: number,
+  key?: string
 }) => {
   return (
     <motion.div 
@@ -728,7 +735,7 @@ const SuccessView = ({ onReturn, key }: { onReturn: () => void, key?: string }) 
   </motion.main>
 );
 
-const OrdersView = ({ orders, onReturn }: { orders: any[], onReturn: () => void }) => (
+const OrdersView = ({ orders, onReturn, key }: { orders: any[], onReturn: () => void, key?: string }) => (
   <motion.main 
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -1052,6 +1059,9 @@ function AppContent() {
                   onHeroPrev={() => setHeroIndex(prev => (prev - 1 + PRODUCTS.length) % PRODUCTS.length)}
                   setHeroIndex={setHeroIndex}
                   onProductClick={setSelectedProduct}
+                  isPlaying={isPlaying}
+                  setIsPlaying={setIsPlaying}
+                  currentSong={currentSong}
                 />
               ) : view === 'vault' ? (
                 <VaultView 
