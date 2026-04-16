@@ -15,7 +15,8 @@ export const PRODUCTS: Product[] = [
     ],
     category: "Apparel",
     color: "Bone White",
-    material: "240GSM Organic Cotton"
+    material: "240GSM Organic Cotton",
+    requiresSize: true
   },
   {
     id: 'varsity-olt-26',
@@ -31,7 +32,8 @@ export const PRODUCTS: Product[] = [
     ],
     category: "Apparel",
     color: "Mustard & Bone",
-    material: "Wool Blend, Lined"
+    material: "Wool Blend, Lined",
+    requiresSize: true
   },
   {
     id: 'slam-book-olt-26',

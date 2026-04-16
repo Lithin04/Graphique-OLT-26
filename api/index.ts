@@ -60,7 +60,8 @@ app.get('/api/debug', async (req, res) => {
   }
 });
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '1071467950240-os0gsqd8scogivkfvnh9ckubj228ng1q.apps.googleusercontent.com';
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 // Verify Google Token
 app.post('/api/auth/google', async (req, res) => {
@@ -68,7 +69,7 @@ app.post('/api/auth/google', async (req, res) => {
   try {
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
     res.json({ success: true, user: payload });
@@ -80,7 +81,7 @@ app.post('/api/auth/google', async (req, res) => {
 
 // Save or Update Order in Google Sheets
 app.post('/api/orders', async (req, res) => {
-  const { orderId, paymentId, userName, userEmail, phone, items, totalPrice, status } = req.body;
+  const { orderId, paymentId, userName, userEmail, phone, teeDetails, varsityDetails, slamDetails, totalPrice, status } = req.body;
   
   try {
     const auth = getGoogleAuth();
@@ -89,7 +90,7 @@ app.post('/api/orders', async (req, res) => {
     console.log(`Searching for InCart draft for ${userEmail}...`);
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Sheet1!A:I',
+      range: 'Sheet1!A:K',
     });
 
     let rows = response.data.values || [];
@@ -97,10 +98,10 @@ app.post('/api/orders', async (req, res) => {
     // Auto-initialize headers if sheet is empty
     if (rows.length === 0) {
       console.log('Sheet is empty. Initializing headers...');
-      const headers = ['Timestamp', 'Order ID', 'User Name', 'User Email', 'Phone', 'Items', 'Total Price', 'Status', 'Payment ID'];
+      const headers = ['Timestamp', 'Order ID', 'User Name', 'User Email', 'Phone', 'T-Shirt (Size & Qty)', 'Varsity (Size & Qty)', 'Slam Book (Qty)', 'Total Price', 'Status', 'Payment ID'];
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: 'Sheet1!A1:I1',
+        range: 'Sheet1!A1:K1',
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [headers] },
       });
@@ -109,7 +110,8 @@ app.post('/api/orders', async (req, res) => {
 
     let rowIndex = -1;
     if (rows.length > 0) {
-      rowIndex = rows.findIndex(row => row[3] === userEmail && row[7] === 'InCart');
+      // Find row by Email (Col 3) and Status (Col 9)
+      rowIndex = rows.findIndex(row => row[3] === userEmail && row[9] === 'InCart');
     }
 
     const rowData = [
@@ -118,7 +120,9 @@ app.post('/api/orders', async (req, res) => {
       userName, 
       userEmail, 
       phone || '', 
-      items, 
+      teeDetails || '', 
+      varsityDetails || '',
+      slamDetails || '',
       totalPrice, 
       status || 'InCart',
       paymentId || ''
@@ -126,7 +130,7 @@ app.post('/api/orders', async (req, res) => {
 
     if (rowIndex !== -1) {
       console.log(`Found existing draft at row ${rowIndex + 1}. Updating...`);
-      const range = `Sheet1!A${rowIndex + 1}:I${rowIndex + 1}`;
+      const range = `Sheet1!A${rowIndex + 1}:K${rowIndex + 1}`;
       await sheets.spreadsheets.values.update({
         spreadsheetId,
         range,
@@ -140,7 +144,7 @@ app.post('/api/orders', async (req, res) => {
       console.log(`No existing draft found. Appending new row...`);
       await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'Sheet1!A:I',
+        range: 'Sheet1!A:K',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [rowData],
@@ -172,7 +176,7 @@ app.get('/api/orders', async (req, res) => {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Sheet1!A:I',
+      range: 'Sheet1!A:K',
     });
 
     const rows = response.data.values;

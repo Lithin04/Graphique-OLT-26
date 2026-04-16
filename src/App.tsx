@@ -5,15 +5,15 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  ShoppingBag, 
-  Album, 
-  AudioLines, 
-  PauseCircle, 
-  Radio, 
-  Sparkles, 
-  Layers, 
-  Archive, 
+import {
+  ShoppingBag,
+  Album,
+  AudioLines,
+  PauseCircle,
+  Radio,
+  Sparkles,
+  Layers,
+  Archive,
   ScrollText,
   ChevronRight,
   ChevronLeft,
@@ -22,7 +22,8 @@ import {
   Trash2,
   Lock,
   Menu,
-  X
+  X,
+  Volume2
 } from 'lucide-react';
 import { useRef } from 'react';
 import { PRODUCTS, BUNDLES } from './constants';
@@ -39,7 +40,7 @@ const GrainOverlay = () => <div className="grain-overlay" />;
 
 const VinylRecord = ({ spinning = true, scaled = false }: { spinning?: boolean, scaled?: boolean }) => (
   <div className="relative group">
-    <motion.div 
+    <motion.div
       animate={spinning ? { rotate: 360 } : { rotate: 0 }}
       transition={spinning ? { duration: 3, repeat: Infinity, ease: "linear" } : {}}
       className={`${scaled ? 'w-48 h-48 md:w-64 md:h-64' : 'w-72 h-72 md:w-96 md:h-96'} rounded-full bg-on-surface flex items-center justify-center shadow-[0_12px_48px_rgba(34,27,11,0.15)] relative overflow-hidden`}
@@ -85,13 +86,13 @@ const HorizontalScroller = ({ children, title, subtitle, animate = false }: { ch
             {subtitle && <p className="text-on-surface-variant mt-2 font-body">{subtitle}</p>}
           </div>
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={() => scroll('left')}
               className="p-3 rounded-full border border-outline-variant/30 hover:bg-primary hover:text-on-primary transition-all z-10"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <button 
+            <button
               onClick={() => scroll('right')}
               className="p-3 rounded-full border border-outline-variant/30 hover:bg-primary hover:text-on-primary transition-all z-10"
             >
@@ -100,16 +101,16 @@ const HorizontalScroller = ({ children, title, subtitle, animate = false }: { ch
           </div>
         </div>
       )}
-      
+
       {animate ? (
         <div className="overflow-hidden whitespace-nowrap py-4">
-          <motion.div 
+          <motion.div
             className="flex gap-6 w-max"
             animate={{ x: ["0%", "-50%"] }}
-            transition={{ 
-              duration: 30, 
-              repeat: Infinity, 
-              ease: "linear" 
+            transition={{
+              duration: 30,
+              repeat: Infinity,
+              ease: "linear"
             }}
           >
             {children}
@@ -117,7 +118,7 @@ const HorizontalScroller = ({ children, title, subtitle, animate = false }: { ch
           </motion.div>
         </div>
       ) : (
-        <div 
+        <div
           ref={scrollRef}
           className="flex gap-6 overflow-x-auto hide-scrollbar pb-8 -mx-4 px-4 snap-x scroll-smooth"
         >
@@ -128,19 +129,20 @@ const HorizontalScroller = ({ children, title, subtitle, animate = false }: { ch
   );
 };
 
-const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onClose: () => void, onAddToCart: (p: Product) => void }) => {
+const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onClose: () => void, onAddToCart: (p: Product, size?: string) => void }) => {
   const [currentImg, setCurrentImg] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [selectedSize, setSelectedSize] = useState<string>("L");
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-8"
     >
       <div className="absolute inset-0 bg-background/40 backdrop-blur-2xl" onClick={onClose} />
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -153,24 +155,24 @@ const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onC
         {/* Image Section */}
         <div className="md:w-3/5 relative bg-black/10 flex items-center justify-center overflow-hidden h-64 md:h-auto select-none">
           <AnimatePresence mode="wait">
-            <motion.img 
+            <motion.img
               key={currentImg}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              src={product.images[currentImg]} 
+              src={product.images[currentImg]}
               alt={product.name}
               className={`w-full h-full object-contain transition-transform duration-500 cursor-zoom-in ${isZoomed ? 'scale-150' : 'scale-100'}`}
               onClick={() => setIsZoomed(!isZoomed)}
             />
           </AnimatePresence>
-          
+
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
             {product.images.map((_, idx) => (
-              <div 
-                key={idx} 
+              <div
+                key={idx}
                 onClick={() => setCurrentImg(idx)}
-                className={`w-2 h-2 rounded-full cursor-pointer transition-all ${idx === currentImg ? 'bg-primary w-6' : 'bg-primary/20'}`} 
+                className={`w-2 h-2 rounded-full cursor-pointer transition-all ${idx === currentImg ? 'bg-primary w-6' : 'bg-primary/20'}`}
               />
             ))}
           </div>
@@ -205,11 +207,27 @@ const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onC
                 <span className="text-xs uppercase font-bold tracking-widest opacity-60">Material</span>
                 <span className="text-sm font-medium">{product.material}</span>
               </div>
+              {product.requiresSize && (
+                <div className="flex flex-col gap-2 border-b border-outline-variant/30 pb-4">
+                  <span className="text-xs uppercase font-bold tracking-widest opacity-60">Size Selection</span>
+                  <div className="flex gap-2">
+                    {['S', 'M', 'L', 'XL', 'XXL'].map(sz => (
+                      <button
+                        key={sz}
+                        onClick={() => setSelectedSize(sz)}
+                        className={`w-10 h-10 rounded-full font-headline text-sm border flex items-center justify-center transition-all ${selectedSize === sz ? 'bg-primary text-on-primary border-primary' : 'border-outline-variant/50 text-primary hover:border-primary'}`}
+                      >
+                        {sz}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          <button 
-            onClick={() => { onAddToCart(product); onClose(); }}
+          <button
+            onClick={() => { onAddToCart(product, product.requiresSize ? selectedSize : undefined); onClose(); }}
             className="w-full py-4 bg-primary text-on-primary rounded-xl font-headline text-lg uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg mt-auto"
           >
             Add to Ritual
@@ -220,9 +238,104 @@ const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onC
   );
 };
 
-const Header = ({ onCartClick, onLogoClick, onOrdersClick, cartCount, user, onLogin, onLogout }: { 
-  onCartClick: () => void, 
-  onLogoClick: () => void, 
+const BundleModal = ({ bundle, onClose, onAddToCart }: { bundle: Bundle, onClose: () => void, onAddToCart: (product: Product, size?: string, bundleSizes?: { tee?: string, varsity?: string }) => void }) => {
+  const containsTee = bundle.items.includes('tee-olt-26');
+  const containsVarsity = bundle.items.includes('varsity-olt-26');
+  const [teeSize, setTeeSize] = useState<string>("L");
+  const [varsitySize, setVarsitySize] = useState<string>("L");
+
+  const handleAdd = () => {
+    bundle.items.forEach(productId => {
+      // Find the product instance from the id
+      const product = PRODUCTS.find(p => p.id === productId);
+      if (product) {
+        let selectedSize: string | undefined = undefined;
+        if (product.id === 'tee-olt-26') selectedSize = teeSize;
+        if (product.id === 'varsity-olt-26') selectedSize = varsitySize;
+        
+        onAddToCart(product, selectedSize, { 
+          tee: containsTee ? teeSize : undefined, 
+          varsity: containsVarsity ? varsitySize : undefined 
+        });
+      }
+    });
+    onClose();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-8"
+    >
+      <div className="absolute inset-0 bg-background/50 backdrop-blur-3xl" onClick={onClose} />
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="relative bg-surface-container-high border border-primary/20 rounded-3xl w-full max-w-lg p-8 shadow-2xl z-10"
+      >
+        <button onClick={onClose} className="absolute top-6 right-6 z-20 text-on-surface-variant hover:text-primary transition-colors">
+          <X className="w-6 h-6" />
+        </button>
+
+        <span className="font-label text-xs uppercase tracking-[0.3em] text-secondary mb-2 block animate-pulse">Bundle Configurator</span>
+        <h2 className="font-headline text-3xl text-primary font-bold tracking-tighter mb-4">{bundle.name}</h2>
+        <p className="font-body text-on-surface-variant mb-8 leading-relaxed">
+          {bundle.description}
+        </p>
+
+        <div className="space-y-6 mb-8">
+          {containsTee && (
+            <div>
+              <label className="font-label text-xs uppercase tracking-widest text-primary block mb-3">T-Shirt Size</label>
+              <div className="flex gap-2">
+                {['S', 'M', 'L', 'XL', 'XXL'].map(sz => (
+                  <button
+                    key={sz}
+                    onClick={() => setTeeSize(sz)}
+                    className={`w-10 h-10 rounded-full font-headline text-sm border flex items-center justify-center transition-all ${teeSize === sz ? 'bg-primary text-on-primary border-primary' : 'border-outline-variant/30 text-primary hover:border-primary/60'}`}
+                  >
+                    {sz}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {containsVarsity && (
+            <div>
+              <label className="font-label text-xs uppercase tracking-widest text-primary block mb-3">Varsity Jacket Size</label>
+              <div className="flex gap-2">
+                {['S', 'M', 'L', 'XL', 'XXL'].map(sz => (
+                  <button
+                    key={sz}
+                    onClick={() => setVarsitySize(sz)}
+                    className={`w-10 h-10 rounded-full font-headline text-sm border flex items-center justify-center transition-all ${varsitySize === sz ? 'bg-secondary text-on-secondary border-secondary' : 'border-outline-variant/30 text-secondary hover:border-secondary/60'}`}
+                  >
+                    {sz}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={handleAdd}
+          className="w-full py-4 bg-primary text-on-primary rounded-xl font-headline text-lg uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg mt-auto flex items-center justify-center gap-2"
+        >
+          Add Bundle to Vault
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+const Header = ({ onCartClick, onLogoClick, onOrdersClick, cartCount, user, onLogin, onLogout }: {
+  onCartClick: () => void,
+  onLogoClick: () => void,
   onOrdersClick: () => void,
   cartCount: number,
   user: any,
@@ -238,7 +351,7 @@ const Header = ({ onCartClick, onLogoClick, onOrdersClick, cartCount, user, onLo
     </div>
     <div className="flex items-center gap-4">
       {user && (
-        <button 
+        <button
           onClick={onOrdersClick}
           className="text-[10px] uppercase font-bold tracking-widest opacity-60 hover:opacity-100 transition-opacity mr-4"
         >
@@ -257,7 +370,7 @@ const Header = ({ onCartClick, onLogoClick, onOrdersClick, cartCount, user, onLo
         </div>
       ) : (
         <div className="scale-75 origin-right">
-          <GoogleLogin 
+          <GoogleLogin
             onSuccess={onLogin}
             onError={() => console.log('Login Failed')}
             useOneTap
@@ -299,47 +412,50 @@ const Footer = () => (
 
 // --- Views ---
 
-const IntroView = ({ onComplete, key }: { onComplete: () => void, key?: string }) => {
-  useEffect(() => {
-    const timer = setTimeout(onComplete, 1500);
-    return () => clearTimeout(timer);
-  }, [onComplete]);
-
+const IntroView = ({ onComplete }: { onComplete: () => void, key?: string }) => {
   return (
-    <motion.main 
+    <motion.main
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-background flex flex-col items-center justify-center z-[100] px-6"
+      className="fixed inset-0 bg-background flex items-center justify-center z-[100] px-6"
     >
       <GrainOverlay />
-      <div className="w-full max-w-2xl flex flex-col items-center gap-8">
+      <div className="w-full max-w-2xl flex flex-col items-center gap-12 text-center">
         <VinylRecord scaled />
-        <div className="text-center space-y-4">
-          <h1 className="font-headline text-3xl md:text-5xl font-bold text-primary tracking-tighter leading-tight">
+        <div className="space-y-6 w-full flex flex-col items-center">
+          <h1 className="font-headline text-4xl md:text-6xl font-bold text-primary tracking-tighter leading-tight uppercase">
             GRAPHIQUE
           </h1>
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-32 md:w-48 h-1 bg-surface-container-highest rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 1.2, ease: "easeInOut" }}
-                className="h-full bg-primary rounded-full" 
-              />
-            </div>
+          <div className="w-48 md:w-64 h-1.5 bg-surface-container-highest rounded-full overflow-hidden shadow-inner">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 1.5, ease: "easeInOut" }}
+              className="h-full bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
+            />
           </div>
+          
+          <motion.button 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.8 }}
+            onClick={onComplete}
+            className="bg-primary text-on-primary px-10 py-4 rounded-full font-headline text-lg uppercase tracking-widest shadow-2xl hover:bg-primary/90 transition-all font-bold mt-4"
+          >
+            Enter Studio
+          </motion.button>
         </div>
       </div>
     </motion.main>
   );
 };
 
-const StorefrontView = ({ 
-  onAddToCart, onAddBundle, heroIndex, onHeroNext, onHeroPrev, setHeroIndex, onProductClick, 
-  isPlaying, setIsPlaying, currentSong, key 
-}: { 
-  onAddToCart: (p: Product) => void, 
+const StorefrontView = ({
+  onAddToCart, onAddBundle, heroIndex, onHeroNext, onHeroPrev, setHeroIndex, onProductClick,
+  isPlaying, setIsPlaying, currentSong, volume, setVolume, onSongChange
+}: {
+  onAddToCart: (p: Product) => void,
   onAddBundle: (b: Bundle) => void,
   heroIndex: number,
   onHeroNext: () => void,
@@ -349,10 +465,13 @@ const StorefrontView = ({
   isPlaying: boolean,
   setIsPlaying: (b: boolean) => void,
   currentSong: number,
+  volume: number,
+  setVolume: (v: number) => void,
+  onSongChange: (dir: 'next' | 'prev') => void,
   key?: string
 }) => {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
@@ -363,31 +482,31 @@ const StorefrontView = ({
         <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
           <h2 className="font-headline font-black text-primary/5 uppercase tracking-tighter text-[20vw] -rotate-12 italic whitespace-nowrap select-none">2026 OLT</h2>
         </div>
-        
+
         <div className="container mx-auto px-6 relative z-10 flex flex-col items-center">
           <div className="relative w-full max-w-lg aspect-square flex items-center justify-center group">
             <AnimatePresence mode="wait">
-              <motion.img 
+              <motion.img
                 key={heroIndex}
-                initial={{ opacity: 0, scale: 0.9, rotate: -3 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                exit={{ opacity: 0, scale: 1.1, rotate: 3 }}
-                transition={{ duration: 0.8, ease: "circOut" }}
+                initial={{ opacity: 0, x: 20, rotate: -1 }}
+                animate={{ opacity: 1, x: 0, rotate: 0 }}
+                exit={{ opacity: 0, x: -20, rotate: 1 }}
+                transition={{ duration: 1.5, ease: "easeInOut" }} // Slower transition
                 alt={PRODUCTS[heroIndex].name}
-                className="w-full h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-3xl cursor-pointer" 
-                src={PRODUCTS[heroIndex].image} 
+                className="w-full h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-3xl cursor-pointer"
+                src={PRODUCTS[heroIndex].image}
                 onClick={() => onProductClick(PRODUCTS[heroIndex])}
               />
             </AnimatePresence>
 
             {/* Float Arrows */}
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); onHeroPrev(); }}
               className="absolute -left-4 md:-left-12 top-1/2 -translate-y-1/2 p-4 bg-background/50 backdrop-blur-xl rounded-full border border-outline-variant/20 text-primary opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-on-primary shadow-xl"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); onHeroNext(); }}
               className="absolute -right-4 md:-right-12 top-1/2 -translate-y-1/2 p-4 bg-background/50 backdrop-blur-xl rounded-full border border-outline-variant/20 text-primary opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-on-primary shadow-xl"
             >
@@ -395,44 +514,48 @@ const StorefrontView = ({
             </button>
           </div>
 
-          <div className="mt-12 text-center max-w-2xl">
-            <motion.div
-              key={`text-${heroIndex}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-4"
-            >
-              <h2 className="font-headline text-4xl md:text-6xl text-primary font-bold tracking-tighter uppercase">{PRODUCTS[heroIndex].name}</h2>
-              <p className="font-body text-xl text-secondary tracking-wide italic">{PRODUCTS[heroIndex].description}</p>
-            </motion.div>
+          <div className="mt-12 text-center max-w-2xl min-h-[140px] flex items-center justify-center"> {/* Added min-h and flex to stabilize positioning */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`text-${heroIndex}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 1.2, ease: "easeInOut" }}
+                className="space-y-4"
+              >
+                <h2 className="font-headline text-3xl md:text-5xl text-primary font-bold tracking-tighter uppercase">{PRODUCTS[heroIndex].name}</h2>
+                <p className="font-body text-lg md:text-xl text-secondary tracking-wide italic leading-relaxed">{PRODUCTS[heroIndex].description}</p> {/* Slightly smaller font for description */}
+              </motion.div>
+            </AnimatePresence>
           </div>
-        </div>
 
-        {/* Dots */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-4 z-20">
-          {PRODUCTS.map((_, idx) => (
-            <button 
-              key={idx}
-              onClick={() => setHeroIndex(idx)}
-              className={`h-1.5 rounded-full transition-all duration-500 ${idx === heroIndex ? 'bg-primary w-12' : 'bg-primary/20 w-4'}`} 
-            />
-          ))}
+          {/* Dots Moved inside container flow to prevent overlap */}
+          <div className="mt-8 flex gap-3 z-20">
+            {PRODUCTS.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setHeroIndex(idx)}
+                className={`h-1.5 rounded-full transition-all duration-500 ${idx === heroIndex ? 'bg-primary w-12' : 'bg-primary/20 w-4'}`}
+              />
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Limited Drop */}
       <section className="max-w-7xl mx-auto px-6 lg:px-8 mb-32 mt-12">
-        <HorizontalScroller title="Class of 2026 Highlights" subtitle="The official Graphique NITT memorabilia collection." animate>
+        <HorizontalScroller title="Class of 2026 Highlights" subtitle="The official Graphique NITT memorabilia collection.">
           {PRODUCTS.map(product => (
             <div key={product.id} className="group flex-shrink-0 w-80 snap-start">
-              <div 
+              <div
                 className="bg-surface-container-high rounded-xl p-4 overflow-hidden cursor-pointer"
                 onClick={() => onProductClick(product)}
               >
-                <img 
-                  alt={product.name} 
-                  className="w-full aspect-square object-cover rounded-lg group-hover:scale-105 transition-transform duration-700" 
-                  src={product.image} 
+                <img
+                  alt={product.name}
+                  className="w-full aspect-square object-cover rounded-lg group-hover:scale-105 transition-transform duration-700"
+                  src={product.image}
                 />
               </div>
               <div className="mt-4 flex justify-between items-start">
@@ -442,8 +565,8 @@ const StorefrontView = ({
                 </div>
                 <span className="font-headline text-lg text-secondary">₹{product.price}</span>
               </div>
-              <button 
-                onClick={() => onAddToCart(product)}
+              <button
+                onClick={() => product.requiresSize ? onProductClick(product) : onAddToCart(product)}
                 className="mt-4 w-full py-3 border border-primary text-primary text-xs font-bold uppercase tracking-widest hover:bg-primary hover:text-on-primary transition-colors inline-block text-center"
               >
                 Add to Ritual
@@ -458,10 +581,10 @@ const StorefrontView = ({
         <div className="absolute -right-24 -top-24 w-96 h-96 bg-primary-container rounded-full blur-3xl opacity-30"></div>
         <div className="max-w-4xl mx-auto text-center">
           <span className="font-label text-xs uppercase tracking-[0.3em] opacity-70 mb-8 block">Preserving the Frequency</span>
-          <h2 className="font-headline text-5xl md:text-7xl italic leading-tight mb-10 uppercase tracking-tighter">THE STUDIO NEVER TRULY CLOSES.</h2>
+          <h2 className="font-headline text-4xl md:text-5xl italic leading-tight mb-10 uppercase tracking-tighter">THE STUDIO NEVER TRULY CLOSES.</h2>
           <div className="grid md:grid-cols-2 gap-12 text-left">
             <p className="font-body text-xl opacity-90 leading-relaxed italic">
-              Graphique is not just a club at NITT; it was the hum of fluorescent lights at 2 AM, the smell of fresh ink on heavy cardstock, and the unspoken pact to create something that outlasted our time together. 
+              Graphique is not just a club at NITT; it was the hum of fluorescent lights at 2 AM, the smell of fresh ink on heavy cardstock, and the unspoken pact to create something that outlasted our time together.
             </p>
             <p className="font-body text-xl opacity-90 leading-relaxed italic">
               As we turn the page for the Class of 2026, we offer these OLT artifacts—not as mere merchandise, but as containers for the legacy we built. Every stitch, every page, every fiber is meant to keep the light from fading.
@@ -477,10 +600,9 @@ const StorefrontView = ({
 
       {/* Bundles Section */}
       <section className="max-w-7xl mx-auto px-6 lg:px-8 mb-32">
-        <HorizontalScroller 
-          title="The Collection Bundles" 
+        <HorizontalScroller
+          title="The Collection Bundles"
           subtitle="Curated sets for a complete archival experience."
-          animate
         >
           {BUNDLES.map(bundle => (
             <div key={bundle.id} className={`flex-shrink-0 w-80 p-8 rounded-xl border border-outline-variant/20 snap-start hover:shadow-xl transition-all duration-300 ${bundle.colorClass}`}>
@@ -493,7 +615,7 @@ const StorefrontView = ({
               <p className="opacity-80 text-sm mb-8 leading-relaxed">{bundle.description}</p>
               <div className="flex justify-between items-end border-t border-current/20 pt-6">
                 <span className="font-headline text-3xl">₹{bundle.price}</span>
-                <button 
+                <button
                   onClick={() => onAddBundle(bundle)}
                   className="text-xs font-bold uppercase tracking-widest border-b-2 border-current pb-1 hover:opacity-70 transition-opacity"
                 >
@@ -507,44 +629,73 @@ const StorefrontView = ({
 
       {/* Radio Widget */}
       <div className="fixed bottom-8 left-8 z-50">
-        <div 
-          onClick={() => setIsPlaying(!isPlaying)}
-          className="bg-background/90 backdrop-blur-md p-4 rounded-xl shadow-[0_12px_32px_rgba(34,27,11,0.12)] border border-outline-variant/20 flex items-center gap-4 w-72 group cursor-pointer transition-all hover:scale-105"
+        <div
+          className="bg-background/90 backdrop-blur-md p-4 rounded-xl shadow-[0_12px_32px_rgba(34,27,11,0.12)] border border-outline-variant/20 flex flex-col gap-3 w-72"
         >
-          <div className="w-12 h-12 bg-secondary-container rounded-lg flex items-center justify-center relative overflow-hidden">
-            <Radio className={`text-on-secondary-container w-6 h-6 ${isPlaying ? 'animate-pulse' : ''}`} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-label text-[10px] text-primary uppercase font-bold tracking-widest truncate">ARCHIVE RADIO — OLT '26</p>
-            <p className="font-body text-xs text-on-surface truncate font-medium">
-              Side {currentSong + 1}: {currentSong === 0 ? "Woh Din" : "Mustafa Mustafa"}
-            </p>
-            <div className="flex gap-1 mt-1">
-              <div className={`h-1 w-1 bg-primary rounded-full transition-all ${isPlaying ? 'animate-bounce' : 'opacity-20'}`}></div>
-              <div className={`h-1 w-1 bg-primary/40 rounded-full transition-all ${isPlaying ? 'animate-bounce delay-75' : 'opacity-20'}`}></div>
-              <div className={`h-1 w-1 bg-primary/20 rounded-full transition-all ${isPlaying ? 'animate-bounce delay-150' : 'opacity-20'}`}></div>
+          <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setIsPlaying(!isPlaying)}>
+            <div className="w-12 h-12 bg-secondary-container rounded-lg flex items-center justify-center relative overflow-hidden">
+              <Radio className={`text-on-secondary-container w-6 h-6 ${isPlaying ? 'animate-pulse' : ''}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-label text-[10px] text-primary uppercase font-bold tracking-widest truncate">ARCHIVE RADIO — OLT '26</p>
+              <p className="font-body text-xs text-on-surface truncate font-medium">
+                Side {currentSong + 1}: {currentSong === 0 ? "Woh Din" : "Mustafa Mustafa"}
+              </p>
+              <div className="flex gap-1 mt-1">
+                <div className={`h-1 w-1 bg-primary rounded-full transition-all ${isPlaying ? 'animate-bounce' : 'opacity-20'}`}></div>
+                <div className={`h-1 w-1 bg-primary/40 rounded-full transition-all ${isPlaying ? 'animate-bounce delay-75' : 'opacity-20'}`}></div>
+                <div className={`h-1 w-1 bg-primary/20 rounded-full transition-all ${isPlaying ? 'animate-bounce delay-150' : 'opacity-20'}`}></div>
+              </div>
             </div>
           </div>
-          <button className="text-secondary hover:text-primary transition-colors">
-            {isPlaying ? <PauseCircle className="w-6 h-6" /> : <div className="w-6 h-6 border-2 border-primary rounded-full flex items-center justify-center"><div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-primary border-b-[4px] border-b-transparent ml-0.5"></div></div>}
-          </button>
+          
+          <div className="flex items-center justify-between border-t border-outline-variant/10 pt-2">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onSongChange('prev'); }}
+              className="text-secondary/70 hover:text-primary transition-colors p-1"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="text-secondary hover:text-primary transition-colors">
+              {isPlaying ? <PauseCircle className="w-6 h-6" /> : <div className="w-6 h-6 border-2 border-primary rounded-full flex items-center justify-center"><div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-primary border-b-[4px] border-b-transparent ml-0.5"></div></div>}
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onSongChange('next'); }}
+              className="text-secondary/70 hover:text-primary transition-colors p-1"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-3 px-1">
+            <Volume2 className="w-4 h-4 text-secondary/60" />
+            <input 
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              className="flex-1 h-1.5 bg-secondary-container rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+          </div>
         </div>
       </div>
     </motion.div>
   );
 };
 
-const VaultView = ({ 
-  cart, 
-  onUpdateQuantity, 
+const VaultView = ({
+  cart,
+  onUpdateQuantity,
   onRemove,
   onCheckout,
   formData,
   setFormData,
   userEmail,
   key
-}: { 
-  cart: CartItem[], 
+}: {
+  cart: CartItem[],
   onUpdateQuantity: (id: string, delta: number) => void,
   onRemove: (id: string) => void,
   onCheckout: () => void,
@@ -556,17 +707,17 @@ const VaultView = ({
   const total = useMemo(() => cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0), [cart]);
 
   return (
-    <motion.main 
+    <motion.main
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="max-w-7xl mx-auto px-6 py-12 lg:py-20"
     >
       <div className="mb-12">
-        <h1 className="font-headline text-5xl md:text-7xl text-primary font-extrabold tracking-tighter mb-4">YOUR VAULT</h1>
+        <h1 className="font-headline text-4xl md:text-5xl text-primary font-extrabold tracking-tighter mb-4">YOUR VAULT</h1>
         <p className="font-body text-secondary text-lg uppercase tracking-widest">Review your selection before preserving history.</p>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         <div className="lg:col-span-8 space-y-12">
           {/* Cart Items */}
@@ -585,25 +736,37 @@ const VaultView = ({
                     <h3 className="font-headline text-2xl text-on-surface">{item.product.name}</h3>
                     <p className="text-on-surface-variant font-medium">{item.product.color} / {item.product.material}</p>
                     <p className="text-primary font-bold text-xl">₹{item.product.price}</p>
+                    {item.size && (
+                      <p className="text-secondary font-label text-[10px] uppercase tracking-widest mt-1">
+                        Size: {item.size}
+                      </p>
+                    )}
+                    {item.bundleSizes && (
+                      <p className="text-secondary font-label text-[10px] uppercase tracking-widest mt-1 opacity-80">
+                        {item.bundleSizes.tee && `Tee: ${item.bundleSizes.tee}`} 
+                        {item.bundleSizes.tee && item.bundleSizes.varsity && ' | '}
+                        {item.bundleSizes.varsity && `Jacket: ${item.bundleSizes.varsity}`}
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-col items-center gap-4">
                     <div className="flex items-center bg-surface-container-highest rounded-full px-4 py-2 border border-outline-variant/20">
-                      <button 
-                        onClick={() => onUpdateQuantity(item.product.id, -1)}
+                      <button
+                        onClick={() => onUpdateQuantity(item.id, -1)}
                         className="text-primary font-bold px-2 hover:scale-110 transition-transform"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
                       <span className="px-4 font-headline text-lg">{String(item.quantity).padStart(2, '0')}</span>
-                      <button 
-                        onClick={() => onUpdateQuantity(item.product.id, 1)}
+                      <button
+                        onClick={() => onUpdateQuantity(item.id, 1)}
                         className="text-primary font-bold px-2 hover:scale-110 transition-transform"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
-                    <button 
-                      onClick={() => onRemove(item.product.id)}
+                    <button
+                      onClick={() => onRemove(item.id)}
                       className="text-on-surface-variant hover:text-error transition-colors flex items-center gap-2 text-xs font-label uppercase tracking-widest"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -624,10 +787,10 @@ const VaultView = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant px-1">Full Name</label>
-                <input 
-                  className="w-full bg-surface-container-highest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface-variant/40" 
-                  placeholder="John Doe" 
-                  type="text" 
+                <input
+                  className="w-full bg-surface-container-highest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface-variant/40"
+                  placeholder="John Doe"
+                  type="text"
                   value={formData.fullName}
                   onChange={(e) => setFormData.setFullName(e.target.value)}
                 />
@@ -642,20 +805,20 @@ const VaultView = ({
               </div>
               <div className="md:col-span-1 space-y-2">
                 <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant px-1">Phone Number</label>
-                <input 
-                  className="w-full bg-surface-container-highest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface-variant/40" 
-                  placeholder="+91 99999 99999" 
-                  type="tel" 
+                <input
+                  className="w-full bg-surface-container-highest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface-variant/40"
+                  placeholder="+91 99999 99999"
+                  type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData.setPhone(e.target.value)}
                 />
               </div>
               <div className="md:col-span-2 space-y-2">
                 <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant px-1">Delivery Address</label>
-                <textarea 
-                  className="w-full bg-surface-container-highest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface-variant/40" 
-                  placeholder="Street, City, State, ZIP" 
-                  rows={3} 
+                <textarea
+                  className="w-full bg-surface-container-highest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface-variant/40"
+                  placeholder="Street, City, State, ZIP"
+                  rows={3}
                   value={formData.address}
                   onChange={(e) => setFormData.setAddress(e.target.value)}
                 ></textarea>
@@ -684,7 +847,7 @@ const VaultView = ({
             </div>
             <div className="space-y-4 mb-8 hidden">
             </div>
-            <button 
+            <button
               onClick={onCheckout}
               className="w-full bg-primary text-on-primary py-5 rounded-full font-headline text-xl uppercase tracking-tighter shadow-lg hover:translate-y-[-2px] hover:shadow-xl active:translate-y-0 transition-all flex items-center justify-center gap-3"
             >
@@ -708,7 +871,7 @@ const VaultView = ({
 };
 
 const SuccessView = ({ onReturn, key }: { onReturn: () => void, key?: string }) => (
-  <motion.main 
+  <motion.main
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
     exit={{ opacity: 0, scale: 1.05 }}
@@ -717,11 +880,11 @@ const SuccessView = ({ onReturn, key }: { onReturn: () => void, key?: string }) 
     <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mb-8 shadow-2xl">
       <Lock className="text-on-primary w-10 h-10" />
     </div>
-    <h1 className="font-headline text-5xl md:text-7xl text-primary font-black tracking-tighter mb-6">VAULT SEALED.</h1>
+    <h1 className="font-headline text-4xl md:text-5xl text-primary font-black tracking-tighter mb-6">VAULT SEALED.</h1>
     <p className="font-body text-xl text-secondary max-w-md mx-auto mb-12 leading-relaxed">
       Your artifacts have been registered in the preservation database. A confirmation ritual has been sent to your email.
     </p>
-    <button 
+    <button
       onClick={onReturn}
       className="bg-surface-container-highest text-primary px-10 py-4 rounded-full font-headline text-lg font-bold uppercase tracking-widest hover:bg-primary hover:text-on-primary transition-all shadow-lg"
     >
@@ -731,7 +894,7 @@ const SuccessView = ({ onReturn, key }: { onReturn: () => void, key?: string }) 
 );
 
 const OrdersView = ({ orders, onReturn, key }: { orders: any[], onReturn: () => void, key?: string }) => (
-  <motion.main 
+  <motion.main
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
@@ -739,10 +902,10 @@ const OrdersView = ({ orders, onReturn, key }: { orders: any[], onReturn: () => 
   >
     <div className="mb-12 flex justify-between items-end">
       <div>
-        <h1 className="font-headline text-5xl text-primary font-extrabold tracking-tighter mb-4">ARCHIVAL LOGS</h1>
+        <h1 className="font-headline text-4xl md:text-5xl text-primary font-extrabold tracking-tighter mb-4">ARCHIVAL LOGS</h1>
         <p className="font-body text-secondary text-lg uppercase tracking-widest">Your history in the preservation database.</p>
       </div>
-      <button 
+      <button
         onClick={onReturn}
         className="text-xs font-bold uppercase tracking-widest border-b border-primary pb-1"
       >
@@ -805,10 +968,11 @@ function AppContent() {
   const [fullName, setFullName] = useState<string>('');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'saved' | 'error'>('idle');
   const [syncError, setSyncError] = useState<string | null>(null);
-  
+
   // Audio State
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSong, setCurrentSong] = useState(0);
+  const [volume, setVolume] = useState(0.7);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const songs = ['/assets/song1.mp3', '/assets/song2.mp3'];
 
@@ -817,27 +981,51 @@ function AppContent() {
 
   // Product Modal State
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null);
 
   // Audio Logic
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio(songs[currentSong]);
-      audioRef.current.onended = () => {
-        setCurrentSong(prev => (prev + 1) % songs.length);
-      };
-    } else {
-      audioRef.current.src = songs[currentSong];
-      if (isPlaying) audioRef.current.play().catch(e => console.log("Autoplay blocked"));
+      audioRef.current.volume = volume;
     }
     
+    const audio = audioRef.current;
+    
+    const handleEnded = () => {
+      setCurrentSong(prev => (prev + 1) % songs.length);
+    };
+
+    audio.addEventListener('ended', handleEnded);
+    
+    // Explicit track change
+    const expectedSrc = window.location.origin + songs[currentSong];
+    if (audio.src !== expectedSrc && !audio.src.includes(songs[currentSong])) {
+      audio.src = songs[currentSong];
+      audio.load();
+      if (isPlaying) {
+        audio.play().catch(e => console.log("Playback interrupted"));
+      }
+    }
+
     return () => {
-      audioRef.current?.pause();
+      audio.removeEventListener('ended', handleEnded);
     };
   }, [currentSong]);
 
+  // Sync Volume
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
+
   useEffect(() => {
     if (isPlaying) {
-      audioRef.current?.play().catch(e => console.log("Autoplay blocked"));
+      audioRef.current?.play().catch(e => {
+        console.log("Autoplay blocked or interrupted");
+        setIsPlaying(false);
+      });
     } else {
       audioRef.current?.pause();
     }
@@ -847,7 +1035,7 @@ function AppContent() {
   useEffect(() => {
     const timer = setInterval(() => {
       setHeroIndex(prev => (prev + 1) % PRODUCTS.length);
-    }, 3000);
+    }, 8000); // Slower interval
     return () => clearInterval(timer);
   }, []);
 
@@ -876,7 +1064,9 @@ function AppContent() {
             userName: fullName || user.name,
             userEmail: user.email,
             phone,
-            items: cart.map(i => `${i.product.name} (x${i.quantity})`).join(', '),
+            teeDetails: cart.filter(i => i.product.id === 'tee-olt-26').map(i => `Size ${i.size || (i.bundleSizes?.tee) || 'N/A'} (x${i.quantity})`).join(', '),
+            varsityDetails: cart.filter(i => i.product.id === 'varsity-olt-26').map(i => `Size ${i.size || (i.bundleSizes?.varsity) || 'N/A'} (x${i.quantity})`).join(', '),
+            slamDetails: cart.filter(i => i.product.id === 'slam-book-olt-26').map(i => `(x${i.quantity})`).join(', '),
             totalPrice: `₹${total}`,
             status: 'InCart'
           }),
@@ -927,9 +1117,12 @@ function AppContent() {
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
         setNotification(`Welcome back, ${data.user.given_name}`);
+      } else {
+        setNotification("Login Failed: The archive could not verify your identity.");
       }
     } catch (err) {
       console.error(err);
+      setNotification("Login Loop Detected: Connection to auth server failed.");
     }
   };
 
@@ -947,25 +1140,26 @@ function AppContent() {
     setNotification("Archival session ended");
   };
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, size?: string, bundleSizes?: { tee?: string, varsity?: string }) => {
     setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id);
+      // Find item with exact same product ID AND same size constraints
+      const existing = prev.find(item => 
+        item.product.id === product.id && 
+        item.size === size &&
+        JSON.stringify(item.bundleSizes) === JSON.stringify(bundleSizes)
+      );
       if (existing) {
-        return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+        return prev.map(item => item.id === existing.id ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...prev, { product, quantity: 1 }];
+      
+      const newItemId = `${product.id}-${size || 'nosize'}-${Math.random().toString(36).substring(2, 6)}`;
+      return [...prev, { id: newItemId, product, quantity: 1, size, bundleSizes }];
     });
     setNotification(`Added ${product.name} to ritual`);
   };
 
   const addBundleToCart = (bundle: Bundle) => {
-    bundle.items.forEach(productId => {
-      const product = PRODUCTS.find(p => p.id === productId);
-      if (product) {
-        addToCart(product);
-      }
-    });
-    setNotification(`Added ${bundle.name} to ritual`);
+    setSelectedBundle(bundle);
   };
 
   const handleCheckout = async () => {
@@ -992,7 +1186,7 @@ function AppContent() {
         body: JSON.stringify({ amount: total }),
       });
       const orderData = await orderResponse.json();
-      
+
       if (!orderData.success) {
         setNotification("Failed to initialize secure payment.");
         return;
@@ -1019,7 +1213,9 @@ function AppContent() {
                 userName: fullName,
                 userEmail: user.email,
                 phone,
-                items: cart.map(i => `${i.product.name} (x${i.quantity})`).join(', '),
+                teeDetails: cart.filter(i => i.product.id === 'tee-olt-26').map(i => `Size ${i.size || (i.bundleSizes?.tee) || 'N/A'} (x${i.quantity})`).join(', '),
+                varsityDetails: cart.filter(i => i.product.id === 'varsity-olt-26').map(i => `Size ${i.size || (i.bundleSizes?.varsity) || 'N/A'} (x${i.quantity})`).join(', '),
+                slamDetails: cart.filter(i => i.product.id === 'slam-book-olt-26').map(i => `(x${i.quantity})`).join(', '),
                 totalPrice: `₹${total}`,
                 status: 'PaymentDone'
               }),
@@ -1052,7 +1248,7 @@ function AppContent() {
         setNotification(`Payment Failed: ${response.error.description}`);
       });
       rzp.open();
-      
+
     } catch (err) {
       setNotification("Failed to connect to the payment gateway.");
     }
@@ -1060,7 +1256,7 @@ function AppContent() {
 
   const updateQuantity = (id: string, delta: number) => {
     setCart(prev => prev.map(item => {
-      if (item.product.id === id) {
+      if (item.id === id) {
         const newQty = Math.max(1, item.quantity + delta);
         return { ...item, quantity: newQty };
       }
@@ -1069,7 +1265,7 @@ function AppContent() {
   };
 
   const removeFromCart = (id: string) => {
-    setCart(prev => prev.filter(item => item.product.id !== id));
+    setCart(prev => prev.filter(item => item.id !== id));
   };
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
@@ -1077,27 +1273,27 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col relative">
       <GrainOverlay />
-      
+
       <AnimatePresence mode="wait">
         {view === 'intro' ? (
-          <IntroView key="intro" onComplete={() => setView('store')} />
+          <IntroView key="intro" onComplete={() => { setView('store'); setIsPlaying(true); }} />
         ) : (
           <div key="content" className="flex-grow flex flex-col">
-            <Header 
-              onCartClick={() => setView('vault')} 
-              onLogoClick={() => setView('store')} 
+            <Header
+              onCartClick={() => setView('vault')}
+              onLogoClick={() => setView('store')}
               onOrdersClick={() => { fetchOrders(); setView('orders'); }}
               cartCount={cartCount}
               user={user}
               onLogin={handleLogin}
               onLogout={handleLogout}
             />
-            
+
             <AnimatePresence mode="wait">
               {view === 'store' ? (
-                <StorefrontView 
-                  key="store" 
-                  onAddToCart={addToCart} 
+                <StorefrontView
+                  key="store"
+                  onAddToCart={addToCart}
                   onAddBundle={addBundleToCart}
                   heroIndex={heroIndex}
                   onHeroNext={() => setHeroIndex(prev => (prev + 1) % PRODUCTS.length)}
@@ -1107,13 +1303,22 @@ function AppContent() {
                   isPlaying={isPlaying}
                   setIsPlaying={setIsPlaying}
                   currentSong={currentSong}
+                  volume={volume}
+                  setVolume={setVolume}
+                  onSongChange={(dir) => {
+                    if (dir === 'next') {
+                      setCurrentSong(prev => (prev + 1) % songs.length);
+                    } else {
+                      setCurrentSong(prev => (prev - 1 + songs.length) % songs.length);
+                    }
+                  }}
                 />
               ) : view === 'vault' ? (
-                <VaultView 
-                  key="vault" 
-                  cart={cart} 
-                  onUpdateQuantity={updateQuantity} 
-                  onRemove={removeFromCart} 
+                <VaultView
+                  key="vault"
+                  cart={cart}
+                  onUpdateQuantity={updateQuantity}
+                  onRemove={removeFromCart}
                   onCheckout={handleCheckout}
                   formData={{ phone, address, fullName }}
                   setFormData={{ setPhone, setAddress, setFullName }}
@@ -1125,7 +1330,7 @@ function AppContent() {
                 <SuccessView key="success" onReturn={() => setView('store')} />
               )}
             </AnimatePresence>
-            
+
             <Footer />
           </div>
         )}
@@ -1133,20 +1338,19 @@ function AppContent() {
 
       <AnimatePresence>
         {syncStatus !== 'idle' && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed bottom-6 right-6 z-[100] flex items-center gap-3 bg-surface-container-highest px-4 py-3 rounded-full border border-primary/20 shadow-2xl backdrop-blur-xl"
           >
-            <div className={`w-2 h-2 rounded-full ${
-              syncStatus === 'syncing' ? 'bg-primary animate-pulse' : 
+            <div className={`w-2 h-2 rounded-full ${syncStatus === 'syncing' ? 'bg-primary animate-pulse' :
               syncStatus === 'saved' ? 'bg-green-500' : 'bg-red-500'
-            }`} />
+              }`} />
             <span className="text-[10px] font-label uppercase tracking-[0.2em] text-on-surface">
-              {syncStatus === 'syncing' ? 'Archive Syncing...' : 
-               syncStatus === 'saved' ? 'Vault Entry Updated' : 
-               `Sync Error: ${syncError || 'Check Console'}`}
+              {syncStatus === 'syncing' ? 'Archive Syncing...' :
+                syncStatus === 'saved' ? 'Vault Entry Updated' :
+                  `Sync Error: ${syncError || 'Check Console'}`}
             </span>
           </motion.div>
         )}
@@ -1156,7 +1360,7 @@ function AppContent() {
 
       <AnimatePresence>
         {notification && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 50, x: '-50%' }}
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: 20, x: '-50%' }}
@@ -1169,9 +1373,18 @@ function AppContent() {
       </AnimatePresence>
       <AnimatePresence>
         {selectedProduct && (
-          <ProductModal 
-            product={selectedProduct} 
-            onClose={() => setSelectedProduct(null)} 
+          <ProductModal
+            product={selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+            onAddToCart={addToCart}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {selectedBundle && (
+          <BundleModal
+            bundle={selectedBundle}
+            onClose={() => setSelectedBundle(null)}
             onAddToCart={addToCart}
           />
         )}

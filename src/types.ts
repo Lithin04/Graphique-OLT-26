@@ -9,6 +9,7 @@ export interface Product {
   category: string;
   color?: string;
   material?: string;
+  requiresSize?: boolean;
 }
 
 export interface Bundle {
@@ -22,6 +23,12 @@ export interface Bundle {
 }
 
 export interface CartItem {
+  id: string; // Unique cart id to support identical products with diff sizes/properties
   product: Product;
   quantity: number;
+  size?: string;
+  bundleSizes?: {
+    tee?: string;
+    varsity?: string;
+  };
 }
