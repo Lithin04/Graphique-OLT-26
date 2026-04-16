@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+.vercel
+out/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Sensitive JSON keys
+*.json
+!package.json
+!tsconfig.json
+!package-lock.json
+!*.example.json
+!vercel.json
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

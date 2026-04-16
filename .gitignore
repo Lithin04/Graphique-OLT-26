@@ -1,29 +1,37 @@
 # Dependencies
 node_modules/
+.pnp
+.pnp.js
 
-# Build artifacts
+# Testing
+coverage/
+
+# Production
 dist/
-build/
+dist-ssr/
+*.local
+
+# Vercel
 .vercel
-out/
 
-# Environment files
+# Environment
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
-# Sensitive JSON keys
+# Sensitive keys
 *.json
 !package.json
 !tsconfig.json
 !package-lock.json
-!*.example.json
 !vercel.json
 
-# IDEs and OS
+# IDEs
 .vscode/
 .idea/
 .DS_Store
-Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
