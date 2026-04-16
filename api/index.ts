@@ -80,7 +80,7 @@ app.post('/api/auth/google', async (req, res) => {
   try {
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: GOOGLE_CLIENT_ID,
+      audience: googleClientId,
     });
     const payload = ticket.getPayload();
     res.json({ success: true, user: payload });
