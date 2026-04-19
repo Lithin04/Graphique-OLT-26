@@ -1031,7 +1031,7 @@ function AppContent() {
   });
   const [orders, setOrders] = useState<any[]>([]);
   const [phone, setPhone] = useState<string>('');
-  const [gender, setGender] = useState<string>('');
+  const [gender, setGender] = useState<string>(() => localStorage.getItem('userGender') || '');
   const [fullName, setFullName] = useState<string>('');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'saved' | 'error'>('idle');
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -1114,7 +1114,6 @@ function AppContent() {
     if (user) localStorage.setItem('user', JSON.stringify(user));
     else localStorage.removeItem('user');
   }, [user]);
-
   // Sync Draft Order (Debounced)
   useEffect(() => {
     if (!user || cart.length === 0) return;
@@ -1122,6 +1121,11 @@ function AppContent() {
     setSyncStatus('syncing');
     const timer = setTimeout(async () => {
       const total = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+
+      // Separate Bundles from Individual Items
+      const bundleItems = cart.filter(i => 'items' in i.product);
+      const individualItems = cart.filter(i => !('items' in i.product));
+
       try {
         await fetch(`${API_BASE}/orders`, {
           method: 'POST',
@@ -1130,32 +1134,27 @@ function AppContent() {
             orderId: 'DRAFT',
             userName: fullName || user.name,
             userEmail: user.email,
-            phone: phone || 'N/A',
-            gender: gender || 'N/A', // Gender added here
+            phone: phone || 'Pending',
+            gender: gender || 'Not Specified', // Ensure this isn't blank
 
-            // Fix: Check BOTH individual items and bundle content for T-shirts
-            teeDetails: cart
-              .map(i => {
-                const size = i.size || i.bundleSizes?.tee;
-                if (size && (i.product.id === 'tee-olt-26' || i.bundleSizes?.tee)) {
-                  return `Size ${size} (x${i.quantity})`;
-                }
-                return null;
-              }).filter(Boolean).join(', '),
+            // Separate Column for Bundles
+            bundleDetails: bundleItems
+              .map(i => `${i.product.name} [Tee: ${i.bundleSizes?.tee || 'N/A'}, Varsity: ${i.bundleSizes?.varsity || 'N/A'}] (x${i.quantity})`)
+              .join(' | '),
 
-            // Fix: Check BOTH individual items and bundle content for Varsity
-            varsityDetails: cart
-              .map(i => {
-                const size = i.size || i.bundleSizes?.varsity;
-                if (size && (i.product.id === 'varsity-olt-26' || i.bundleSizes?.varsity)) {
-                  return `Size ${size} (x${i.quantity})`;
-                }
-                return null;
-              }).filter(Boolean).join(', '),
+            // Individual T-Shirt Column
+            teeDetails: individualItems
+              .filter(i => i.product.id === 'tee-olt-26')
+              .map(i => `Size ${i.size} (x${i.quantity})`).join(', '),
 
-            // Slam Book logic
+            // Individual Varsity Column
+            varsityDetails: individualItems
+              .filter(i => i.product.id === 'varsity-olt-26')
+              .map(i => `Size ${i.size} (x${i.quantity})`).join(', '),
+
+            // Slam Book Column
             slamDetails: cart
-              .filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26'))
+              .filter(i => i.product.id === 'slam-book-olt-26')
               .map(i => `(x${i.quantity})`).join(', '),
 
             totalPrice: `₹${total}`,
@@ -1166,11 +1165,12 @@ function AppContent() {
         setTimeout(() => setSyncStatus('idle'), 3000);
       } catch (err) {
         setSyncStatus('error');
+        setSyncError("Failed to update database");
       }
-    }, 2000);
+    }, 1500); // Slightly faster debounce
 
     return () => clearTimeout(timer);
-  }, [cart, phone, fullName, gender, user]); // Dependency array MUST include gender
+  }, [cart, phone, fullName, gender, user]);
 
   const fetchOrders = async () => {
     if (!user) return;
