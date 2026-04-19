@@ -45,14 +45,30 @@ const VinylRecord = ({ spinning = true, scaled = false }: { spinning?: boolean, 
       transition={spinning ? { duration: 3, repeat: Infinity, ease: "linear" } : {}}
       className={`${scaled ? 'w-48 h-48 md:w-64 md:h-64' : 'w-72 h-72 md:w-96 md:h-96'} rounded-full bg-on-surface flex items-center justify-center shadow-[0_12px_48px_rgba(34,27,11,0.15)] relative overflow-hidden`}
     >
+      {/* Vinyl Grooves Texture */}
       <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'repeating-radial-gradient(circle, transparent, transparent 2px, #382f1e 3px, #382f1e 4px)' }}></div>
-      <div className={`${scaled ? 'w-20 h-20 md:w-28 md:h-28' : 'w-32 h-32 md:w-44 md:h-44'} rounded-full bg-secondary-container flex items-center justify-center border-[6px] border-on-surface z-10`}>
-        <div className="text-center">
-          <span className="font-headline font-bold text-on-secondary-container text-[8px] md:text-[10px] tracking-[0.2em] uppercase block mb-1">Side A</span>
-          <div className="h-[1px] w-6 bg-on-secondary-container mx-auto mb-2"></div>
-          <span className={`font-headline font-extrabold text-on-secondary-container ${scaled ? 'text-sm md:text-lg' : 'text-lg md:text-2xl'} tracking-tighter`}>1978</span>
+
+      {/* Inner Label */}
+      <div className={`${scaled ? 'w-20 h-20 md:w-28 md:h-28' : 'w-32 h-32 md:w-44 md:h-44'} rounded-full bg-secondary-container flex items-center justify-center border-[6px] border-on-surface z-10 relative`}>
+
+        {/* Center Hole - Now handled before the text to ensure correct layering */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 bg-background rounded-full border-2 border-on-surface z-20"></div>
+
+        <div className="text-center flex flex-col items-center justify-center">
+          {/* OLT - Pushed up slightly */}
+          <span className="font-headline font-bold text-on-secondary-container text-[8px] md:text-[10px] tracking-[0.2em] uppercase block mb-0.5">
+            OLT
+          </span>
+
+          {/* Divider line */}
+          <div className="h-[1px] w-6 bg-on-secondary-container mb-4"></div>
+
+          {/* 2026 - Pushed down to clear the center hole */}
+          <span className={`font-headline font-extrabold text-on-secondary-container ${scaled ? 'text-sm md:text-lg' : 'text-lg md:text-2xl'} tracking-tighter mt-2 block`}>
+            2026
+          </span>
         </div>
-        <div className="absolute w-3 h-3 md:w-4 bg-background rounded-full border-2 border-on-surface"></div>
+
       </div>
     </motion.div>
     {!scaled && (
@@ -388,51 +404,59 @@ const Header = ({ onCartClick, onLogoClick, onOrdersClick, cartCount, user, onLo
   onLogin: (cred: any) => void,
   onLogout: () => void
 }) => (
-  <nav className="bg-background/85 backdrop-blur-xl text-primary font-headline tracking-tight top-0 sticky shadow-[0_4px_24px_rgba(34,27,11,0.04)] flex justify-between items-center px-8 py-4 max-w-full z-50">
-    <div className="flex items-center gap-3 cursor-pointer" onClick={onLogoClick}>
-      <img alt="Logo" className="h-8 w-auto mix-blend-multiply brightness-75" src="/assets/image.png" />
-      <div className="text-xl font-bold tracking-tighter text-primary uppercase">GRAPHIQUE</div>
-    </div>
-    <div className="hidden md:flex items-center gap-8">
-    </div>
-    <div className="flex items-center gap-4">
-      {user && (
-        <button
-          onClick={onOrdersClick}
-          className="text-[10px] uppercase font-bold tracking-widest opacity-60 hover:opacity-100 transition-opacity mr-4"
-        >
-          History
-        </button>
-      )}
-      {user ? (
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Curator</span>
-            <span className="text-xs font-bold">{user.name}</span>
-          </div>
-          <button onClick={onLogout} className="text-[10px] uppercase font-bold text-error border border-error/20 px-3 py-1 rounded-full hover:bg-error hover:text-white transition-all">
-            Exit
+  <nav className="bg-background/85 backdrop-blur-xl text-primary font-headline tracking-tight top-0 sticky shadow-[0_4px_24px_rgba(34,27,11,0.04)] z-50">
+    {/* Use a container with max-width and better padding control */}
+    <div className="max-w-7xl mx-auto flex justify-between items-center px-4 md:px-8 py-4">
+
+      {/* Logo Section: Shrink text on mobile if needed */}
+      <div className="flex items-center gap-2 md:gap-3 cursor-pointer flex-shrink-0" onClick={onLogoClick}>
+        <img alt="Logo" className="h-6 md:h-8 w-auto mix-blend-multiply brightness-75" src="/assets/image.png" />
+        <div className="text-base md:text-xl font-bold tracking-tighter text-primary uppercase">GRAPHIQUE</div>
+      </div>
+
+      {/* Action Section */}
+      <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
+        {user && (
+          <button
+            onClick={onOrdersClick}
+            className="text-[9px] md:text-[10px] uppercase font-bold tracking-widest opacity-60 hover:opacity-100 transition-opacity whitespace-nowrap"
+          >
+            History
           </button>
-        </div>
-      ) : (
-        <div className="scale-75 origin-right">
-          <GoogleLogin
-            onSuccess={onLogin}
-            onError={() => console.log('Login Failed')}
-            useOneTap
-            shape="pill"
-            theme="filled_blue"
-          />
-        </div>
-      )}
-      <button onClick={onCartClick} className="relative p-2 text-primary hover:scale-95 duration-200">
-        <ShoppingBag className="w-6 h-6" />
-        {cartCount > 0 && (
-          <span className="absolute top-0 right-0 bg-primary text-on-primary text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-            {cartCount}
-          </span>
         )}
-      </button>
+
+        {user ? (
+          <div className="flex items-center gap-2 md:gap-4">
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Curator</span>
+              <span className="text-xs font-bold">{user.name.split(' ')[0]}</span>
+            </div>
+            <button onClick={onLogout} className="text-[9px] md:text-[10px] uppercase font-bold text-error border border-error/20 px-2 md:px-3 py-1 rounded-full hover:bg-error hover:text-white transition-all whitespace-nowrap">
+              Exit
+            </button>
+          </div>
+        ) : (
+          <div className="scale-75 origin-right flex-shrink-0">
+            <GoogleLogin
+              onSuccess={onLogin}
+              onError={() => console.log('Login Failed')}
+              useOneTap
+              shape="pill"
+              theme="filled_blue"
+            />
+          </div>
+        )}
+
+        {/* Cart Button: Ensure it has room */}
+        <button onClick={onCartClick} className="relative p-2 text-primary hover:scale-95 duration-200 flex-shrink-0">
+          <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
+          {cartCount > 0 && (
+            <span className="absolute top-0 right-0 bg-primary text-on-primary text-[8px] md:text-[10px] font-bold w-3.5 h-3.5 md:w-4 md:h-4 rounded-full flex items-center justify-center">
+              {cartCount}
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   </nav>
 );
@@ -510,7 +534,8 @@ const IntroView = ({ onComplete }: { onComplete: () => void, key?: string }) => 
 
 const StorefrontView = ({
   onAddToCart, onAddBundle, heroIndex, onHeroNext, onHeroPrev, setHeroIndex, onProductClick,
-  isPlaying, setIsPlaying, currentSong, volume, setVolume, onSongChange
+  isPlaying, setIsPlaying, currentSong, volume, setVolume, onSongChange,
+  isMinimized, setIsMinimized
 }: {
   onAddToCart: (p: Product) => void,
   onAddBundle: (b: Bundle) => void,
@@ -525,6 +550,8 @@ const StorefrontView = ({
   volume: number,
   setVolume: (v: number) => void,
   onSongChange: (dir: 'next' | 'prev') => void,
+  isMinimized: boolean,
+  setIsMinimized: (b: boolean) => void,
   key?: string
 }) => {
   return (
@@ -701,57 +728,78 @@ const StorefrontView = ({
 
       {/* Radio Widget */}
       <div className="fixed bottom-8 left-8 z-50">
-        <div
-          className="bg-background/90 backdrop-blur-md p-4 rounded-xl shadow-[0_12px_32px_rgba(34,27,11,0.12)] border border-outline-variant/20 flex flex-col gap-3 w-72"
-        >
-          <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setIsPlaying(!isPlaying)}>
-            <div className="w-12 h-12 bg-secondary-container rounded-lg flex items-center justify-center relative overflow-hidden">
-              <Radio className={`text-on-secondary-container w-6 h-6 ${isPlaying ? 'animate-pulse' : ''}`} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-label text-[10px] text-primary uppercase font-bold tracking-widest truncate">RADIO — OLT '26</p>
-              <p className="font-body text-xs text-on-surface truncate font-medium">
-                Side {currentSong + 1}: {currentSong === 0 ? "Woh Din" : "Mustafa Mustafa"}
-              </p>
-              <div className="flex gap-1 mt-1">
-                <div className={`h-1 w-1 bg-primary rounded-full transition-all ${isPlaying ? 'animate-bounce' : 'opacity-20'}`}></div>
-                <div className={`h-1 w-1 bg-primary/40 rounded-full transition-all ${isPlaying ? 'animate-bounce delay-75' : 'opacity-20'}`}></div>
-                <div className={`h-1 w-1 bg-primary/20 rounded-full transition-all ${isPlaying ? 'animate-bounce delay-150' : 'opacity-20'}`}></div>
+        <AnimatePresence mode="wait">
+          {isMinimized ? (
+            <motion.button
+              key="minimized"
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              exit={{ scale: 0, rotate: 180 }}
+              onClick={() => setIsMinimized(false)}
+              className="bg-background/90 backdrop-blur-md p-4 rounded-full shadow-2xl border border-outline-variant/20 text-primary hover:bg-primary hover:text-on-primary transition-all group"
+            >
+              <Radio className={`w-6 h-6 ${isPlaying ? 'animate-pulse' : ''}`} />
+              {isPlaying && (
+                <span className="absolute top-0 right-0 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                </span>
+              )}
+            </motion.button>
+          ) : (
+            <motion.div
+              key="full"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className="bg-background/90 backdrop-blur-md p-4 rounded-xl shadow-[0_12px_32px_rgba(34,27,11,0.12)] border border-outline-variant/20 flex flex-col gap-3 w-72 relative"
+            >
+              <button
+                onClick={() => setIsMinimized(true)}
+                className="absolute -top-2 -right-2 bg-surface-container-highest rounded-full p-1 border border-outline-variant/20 text-primary hover:scale-110 transition-transform z-10"
+              >
+                <X className="w-3 h-3" />
+              </button>
+
+              <div className="flex items-center gap-4 group cursor-pointer" onClick={() => setIsPlaying(!isPlaying)}>
+                <div className="w-12 h-12 bg-secondary-container rounded-lg flex items-center justify-center relative overflow-hidden">
+                  <Radio className={`text-on-secondary-container w-6 h-6 ${isPlaying ? 'animate-pulse' : ''}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-label text-[10px] text-primary uppercase font-bold tracking-widest truncate">RADIO — OLT '26</p>
+                  <p className="font-body text-xs text-on-surface truncate font-medium">
+                    Side {currentSong + 1}: {currentSong === 0 ? "Woh Din" : "Mustafa Mustafa"}
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="flex items-center justify-between border-t border-outline-variant/10 pt-2">
-            <button
-              onClick={(e) => { e.stopPropagation(); onSongChange('prev'); }}
-              className="text-secondary/70 hover:text-primary transition-colors p-1"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="text-secondary hover:text-primary transition-colors">
-              {isPlaying ? <PauseCircle className="w-6 h-6" /> : <div className="w-6 h-6 border-2 border-primary rounded-full flex items-center justify-center"><div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-primary border-b-[4px] border-b-transparent ml-0.5"></div></div>}
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onSongChange('next'); }}
-              className="text-secondary/70 hover:text-primary transition-colors p-1"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+              <div className="flex items-center justify-between border-t border-outline-variant/10 pt-2">
+                <button onClick={() => onSongChange('prev')} className="text-secondary/70 hover:text-primary p-1">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button onClick={() => setIsPlaying(!isPlaying)} className="text-secondary hover:text-primary transition-colors">
+                  {isPlaying ? <PauseCircle className="w-6 h-6" /> : <div className="w-6 h-6 border-2 border-primary rounded-full flex items-center justify-center"><div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-primary border-b-[4px] border-b-transparent ml-0.5"></div></div>}
+                </button>
+                <button onClick={() => onSongChange('next')} className="text-secondary/70 hover:text-primary p-1">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
 
-          <div className="flex items-center gap-3 px-1">
-            <Volume2 className="w-4 h-4 text-secondary/60" />
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={volume}
-              onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="flex-1 h-1.5 bg-secondary-container rounded-lg appearance-none cursor-pointer accent-primary"
-            />
-          </div>
-        </div>
+              <div className="flex items-center gap-3 px-1">
+                <Volume2 className="w-4 h-4 text-secondary/60" />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={volume}
+                  onChange={(e) => setVolume(parseFloat(e.target.value))}
+                  className="flex-1 h-1.5 bg-secondary-container rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
@@ -1049,6 +1097,15 @@ function AppContent() {
   // Product Modal State
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedBundle, setSelectedBundle] = useState<Bundle | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  // Timer Logic
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsMinimized(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Audio Logic
   useEffect(() => {
@@ -1291,21 +1348,29 @@ function AppContent() {
                 userName: fullName,
                 userEmail: user.email,
                 phone,
-                gender, // Added Gender
-                // Extract details for individual items or bundles
+                gender,
+
+                // 1. Individual T-Shirt Column (Exclude Bundles)
                 teeDetails: cart
-                  .filter(i => i.product.id === 'tee-olt-26' || (i.product as any).items?.includes('tee-olt-26'))
-                  .map(i => `Size ${i.size || i.bundleSizes?.tee || 'N/A'} (x${i.quantity})`).join(', '),
+                  .filter(i => i.product.id === 'tee-olt-26' && !('items' in i.product))
+                  .map(i => `Size ${i.size} (x${i.quantity})`).join(', '),
+
+                // 2. Individual Varsity Column (Exclude Bundles)
                 varsityDetails: cart
-                  .filter(i => i.product.id === 'varsity-olt-26' || (i.product as any).items?.includes('varsity-olt-26'))
-                  .map(i => `Size ${i.size || i.bundleSizes?.varsity || 'N/A'} (x${i.quantity})`).join(', '),
+                  .filter(i => i.product.id === 'varsity-olt-26' && !('items' in i.product))
+                  .map(i => `Size ${i.size} (x${i.quantity})`).join(', '),
+
+                // 3. Individual Slam Book Column
                 slamDetails: cart
-                  .filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26'))
+                  .filter(i => i.product.id === 'slam-book-olt-26' && !('items' in i.product))
                   .map(i => `(x${i.quantity})`).join(', '),
-                // New specific section for Bundles
+
+                // 4. Bundles Column ONLY (This keeps Column M clean)
                 bundleDetails: cart
                   .filter(i => 'items' in i.product)
-                  .map(i => `${i.product.name} [Tee: ${i.bundleSizes?.tee || 'N/A'}, Varsity: ${i.bundleSizes?.varsity || 'N/A'}] (x${i.quantity})`).join(' | '),
+                  .map(i => `${i.product.name} [Tee: ${i.bundleSizes?.tee || 'N/A'}, Varsity: ${i.bundleSizes?.varsity || 'N/A'}] (x${i.quantity})`)
+                  .join(' | '),
+
                 totalPrice: `₹${total}`,
                 status: 'PaymentDone'
               }),
@@ -1316,11 +1381,9 @@ function AppContent() {
               setView('success');
               setCart([]);
               localStorage.removeItem('cart');
-            } else {
-              setNotification(finalData.error || "Failed to finalize database sync");
             }
           } catch (err) {
-            setNotification("Server synchronization failed during payment completion");
+            setNotification("Payment verified, but database sync failed.");
           }
         },
         prefill: { name: fullName, email: user.email, contact: phone },
@@ -1393,6 +1456,8 @@ function AppContent() {
                       setCurrentSong(prev => (prev - 1 + songs.length) % songs.length);
                     }
                   }}
+                  isMinimized={isMinimized}
+                  setIsMinimized={setIsMinimized}
                 />
               ) : view === 'vault' ? (
                 <VaultView
