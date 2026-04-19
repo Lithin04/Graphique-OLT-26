@@ -1350,22 +1350,28 @@ function AppContent() {
                 phone,
                 gender,
 
-                // 1. Individual T-Shirt Column (Exclude Bundles)
+                // 1. T-Shirt Column: Get size from standalone OR bundle
                 teeDetails: cart
-                  .filter(i => i.product.id === 'tee-olt-26' && !('items' in i.product))
-                  .map(i => `Size ${i.size} (x${i.quantity})`).join(', '),
+                  .filter(i => i.product.id === 'tee-olt-26' || i.bundleSizes?.tee)
+                  .map(i => {
+                    const size = i.size || i.bundleSizes?.tee;
+                    return `Size ${size} (x${i.quantity})`;
+                  }).join(', '),
 
-                // 2. Individual Varsity Column (Exclude Bundles)
+                // 2. Varsity Column: Get size from standalone OR bundle
                 varsityDetails: cart
-                  .filter(i => i.product.id === 'varsity-olt-26' && !('items' in i.product))
-                  .map(i => `Size ${i.size} (x${i.quantity})`).join(', '),
+                  .filter(i => i.product.id === 'varsity-olt-26' || i.bundleSizes?.varsity)
+                  .map(i => {
+                    const size = i.size || i.bundleSizes?.varsity;
+                    return `Size ${size} (x${i.quantity})`;
+                  }).join(', '),
 
-                // 3. Individual Slam Book Column
+                // 3. Slam Book Column
                 slamDetails: cart
-                  .filter(i => i.product.id === 'slam-book-olt-26' && !('items' in i.product))
+                  .filter(i => i.product.id === 'slam-book-olt-26' || i.product.id.includes('starter') || i.product.id.includes('duo') || i.product.id.includes('full'))
                   .map(i => `(x${i.quantity})`).join(', '),
 
-                // 4. Bundles Column ONLY (This keeps Column M clean)
+                // 4. Bundles Column: Keep this as a summary record
                 bundleDetails: cart
                   .filter(i => 'items' in i.product)
                   .map(i => `${i.product.name} [Tee: ${i.bundleSizes?.tee || 'N/A'}, Varsity: ${i.bundleSizes?.varsity || 'N/A'}] (x${i.quantity})`)
@@ -1383,7 +1389,7 @@ function AppContent() {
               localStorage.removeItem('cart');
             }
           } catch (err) {
-            setNotification("Payment verified, but database sync failed.");
+            setNotification("Payment verified, sync failed.");
           }
         },
         prefill: { name: fullName, email: user.email, contact: phone },
