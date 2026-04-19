@@ -38,7 +38,7 @@ export const PRODUCTS: Product[] = [
     name: "Final Draft",
     description: "Slam Book",
     longDescription: "",
-    price: 250,
+    price: 129,
     image: "assets/slam_back.png",
     images: [
       "assets/slam_back.png",
@@ -55,7 +55,7 @@ export const BUNDLES: Bundle[] = [
     id: 'starter-olt',
     name: "Starter Kit",
     description: "Begin your personal archive. Includes the Oversized Tshirt and the Slam Book.",
-    price: 1,
+    price: 489,
     icon: "auto_awesome",
     items: ['tee-olt-26', 'slam-book-olt-26'],
     image: "assets/c1.png",
@@ -65,10 +65,10 @@ export const BUNDLES: Bundle[] = [
     id: 'the-duo-olt',
     name: "The Duo",
     description: "The complete studio uniform. Pair the Varsity Jacket with the Slam Book.",
-    price: 1,
+    price: 959,
     icon: "layers",
     image: "assets/c2.png",
-    items: ['tee-olt-26', 'varsity-olt-26'],
+    items: ['slam-book-olt-26', 'varsity-olt-26'],
     colorClass: "bg-surface-container-low"
   },
   {

@@ -1104,13 +1104,14 @@ function AppContent() {
 
   // Sync Draft Order (Debounced)
   useEffect(() => {
+    // We only sync if there is a user and something is in the cart
     if (!user || cart.length === 0) return;
 
     setSyncStatus('syncing');
     const timer = setTimeout(async () => {
       const total = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
       try {
-        await fetch(`${API_BASE}/orders`, {
+        const response = await fetch(`${API_BASE}/orders`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1118,7 +1119,9 @@ function AppContent() {
             userName: fullName || user.name,
             userEmail: user.email,
             phone,
-            gender, // Added Gender
+            gender, // Included gender in draft sync
+
+            // Clean Tee Mapping (Matches Checkout)
             teeDetails: cart
               .map(i => {
                 if (i.product.id === 'tee-olt-26') return `Size ${i.size} (x${i.quantity})`;
@@ -1126,7 +1129,7 @@ function AppContent() {
                 return null;
               }).filter(Boolean).join(', '),
 
-            // Clean Varsity Column: Only shows Varsity sizes
+            // Clean Varsity Mapping (Matches Checkout)
             varsityDetails: cart
               .map(i => {
                 if (i.product.id === 'varsity-olt-26') return `Size ${i.size} (x${i.quantity})`;
@@ -1137,19 +1140,30 @@ function AppContent() {
             slamDetails: cart
               .filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26'))
               .map(i => `(x${i.quantity})`).join(', '),
+
             totalPrice: `₹${total}`,
             status: 'InCart'
           }),
         });
-        setSyncStatus('saved');
-        setTimeout(() => setSyncStatus('idle'), 3000);
+
+        const data = await response.json();
+        if (data.success) {
+          setSyncStatus('saved');
+          setSyncError(null);
+          setTimeout(() => setSyncStatus('idle'), 3000);
+        } else {
+          setSyncStatus('error');
+          setSyncError(data.details || data.error);
+        }
       } catch (err: any) {
+        console.error('Draft Sync Failed', err);
         setSyncStatus('error');
       }
-    }, 2000);
+    }, 2000); // 2 second debounce
 
     return () => clearTimeout(timer);
-  }, [cart, phone, fullName, gender, user]); // Added gender to dependency array
+    // CRITICAL: Added 'gender' to dependencies so it syncs when they select it
+  }, [cart, phone, fullName, gender, user]);
 
   const fetchOrders = async () => {
     if (!user) return;
