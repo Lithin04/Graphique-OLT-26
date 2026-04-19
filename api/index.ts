@@ -9,10 +9,10 @@ dotenv.config();
 // Try loading from backend/.env if not found in root
 dotenv.config({ path: 'backend/.env' });
 
-const spreadsheetId = process.env.SPREADSHEET_ID || '1LfK8kuq172eaDvsPLSswWzSu8h8vrMB5XMI-J9ket2c';
-const googleClientId = process.env.GOOGLE_CLIENT_ID || '1071467950240-os0gsqd8scogivkfvnh9ckubj228ng1q.apps.googleusercontent.com';
-const razorpayKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_live_SeGSjBujn5Tfjv';
-const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || 'PfYDmgQ6XsOAi23q0Kk7nc4z';
+const spreadsheetId = process.env.SPREADSHEET_ID;
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
 
 console.log('--- Environment Diagnostics ---');
 console.log('SPREADSHEET_ID:', process.env.SPREADSHEET_ID ? 'PRESENT' : 'USING FALLBACK');
@@ -92,7 +92,7 @@ app.post('/api/auth/google', async (req, res) => {
 
 // Save or Update Order in Google Sheets
 app.post('/api/orders', async (req, res) => {
-  const { orderId, paymentId, userName, userEmail, phone, teeDetails, varsityDetails, slamDetails, totalPrice, status } = req.body;
+  const { orderId, paymentId, userName, userEmail, phone, teeDetails, varsityDetails, slamDetails, totalPrice, status, gender, bundleDetails } = req.body;
 
   try {
     const auth = getGoogleAuth();
@@ -101,18 +101,21 @@ app.post('/api/orders', async (req, res) => {
     console.log(`Searching for InCart draft for ${userEmail}...`);
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Sheet1!A:K',
+      range: 'Sheet1!A:M',
     });
 
     let rows = response.data.values || [];
 
     // Auto-initialize headers if sheet is empty
     if (rows.length === 0) {
-      console.log('Sheet is empty. Initializing headers...');
-      const headers = ['Timestamp', 'Order ID', 'User Name', 'User Email', 'Phone', 'T-Shirt (Size & Qty)', 'Varsity (Size & Qty)', 'Slam Book (Qty)', 'Total Price', 'Status', 'Payment ID'];
+      const headers = [
+        'Timestamp', 'Order ID', 'User Name', 'User Email', 'Phone',
+        'T-Shirt (Size & Qty)', 'Varsity (Size & Qty)', 'Slam Book (Qty)',
+        'Total Price', 'Status', 'Payment ID', 'Gender', 'Bundles'
+      ];
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: 'Sheet1!A1:K1',
+        range: 'Sheet1!A1:M1',
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [headers] },
       });
@@ -121,7 +124,6 @@ app.post('/api/orders', async (req, res) => {
 
     let rowIndex = -1;
     if (rows.length > 0) {
-      // Find row by Email (Col 3) and Status (Col 9)
       rowIndex = rows.findIndex(row => row[3] === userEmail && row[9] === 'InCart');
     }
 
@@ -136,45 +138,32 @@ app.post('/api/orders', async (req, res) => {
       slamDetails || '',
       totalPrice,
       status || 'InCart',
-      paymentId || ''
+      paymentId || '',
+      gender || 'N/A',
+      bundleDetails || ''
     ];
 
     if (rowIndex !== -1) {
-      console.log(`Found existing draft at row ${rowIndex + 1}. Updating...`);
-      const range = `Sheet1!A${rowIndex + 1}:K${rowIndex + 1}`;
+      const range = `Sheet1!A${rowIndex + 1}:M${rowIndex + 1}`;
       await sheets.spreadsheets.values.update({
         spreadsheetId,
         range,
         valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [rowData],
-        },
+        requestBody: { values: [rowData] },
       });
-      console.log(`Successfully updated draft for ${userEmail}`);
     } else {
-      console.log(`No existing draft found. Appending new row...`);
       await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'Sheet1!A:K',
+        range: 'Sheet1!A:M',
         valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [rowData],
-        },
+        requestBody: { values: [rowData] },
       });
-      console.log(`Successfully appended draft for ${userEmail}`);
     }
 
     res.json({ success: true });
   } catch (error: any) {
     console.error('Sheets Sync Error:', error.message);
-    if (error.response) {
-      console.error('API Response Error:', error.response.data);
-    }
-    res.status(500).json({
-      success: false,
-      error: 'Failed to sync with Google Sheets',
-      details: error.message
-    });
+    res.status(500).json({ success: false, error: 'Failed to sync with Google Sheets' });
   }
 });
 
@@ -187,7 +176,7 @@ app.get('/api/orders', async (req, res) => {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Sheet1!A:K',
+      range: 'Sheet1!A:M',
     });
 
     const rows = response.data.values;
