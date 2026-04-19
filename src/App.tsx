@@ -1353,7 +1353,13 @@ function AppContent() {
         order_id: orderData.order.id,
         handler: async function (response: any) {
           try {
-            const total = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+            // Helper function to extract size from the combined string
+            const extractSize = (str: string | undefined, type: string) => {
+              if (!str) return null;
+              const regex = new RegExp(`${type}:\\s*([^\\s|]+)`);
+              const match = str.match(regex);
+              return match ? match[1] : null;
+            };
 
             const finalResponse = await fetch(`${API_BASE}/orders`, {
               method: 'POST',
@@ -1366,42 +1372,31 @@ function AppContent() {
                 phone,
                 gender,
 
-                // FIX: Extract sizes from standalone OR bundles
+                // 1. T-Shirt Details (Regex extraction)
                 teeDetails: cart
                   .map(i => {
-                    // Check if it's a standalone tee OR a bundle containing a tee
-                    const size = i.size || i.bundleSizes?.tee;
-                    if (size && (i.product.id === 'tee-olt-26' || i.bundleSizes?.tee)) {
-                      return `Size ${size} (x${i.quantity})`;
-                    }
-                    return null;
+                    const size = extractSize(i.size, 'Tee') || (i.product.id === 'tee-olt-26' ? i.size : null);
+                    return size ? `Size ${size} (x${i.quantity})` : null;
                   })
-                  .filter(Boolean)
-                  .join(', '),
+                  .filter(Boolean).join(', '),
 
+                // 2. Varsity Details (Regex extraction)
                 varsityDetails: cart
                   .map(i => {
-                    // Check if it's a standalone jacket OR a bundle containing a jacket
-                    const size = i.size || i.bundleSizes?.varsity;
-                    if (size && (i.product.id === 'varsity-olt-26' || i.bundleSizes?.varsity)) {
-                      return `Size ${size} (x${i.quantity})`
-                    }
-                    return null;
+                    const size = extractSize(i.size, 'Varsity') || (i.product.id === 'varsity-olt-26' ? i.size : null);
+                    return size ? `Size ${size} (x${i.quantity})` : null;
                   })
-                  .filter(Boolean)
-                  .join(', '),
+                  .filter(Boolean).join(', '),
 
+                // 3. Slam Book Details
                 slamDetails: cart
                   .filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26'))
                   .map(i => `(x${i.quantity})`).join(', '),
 
+                // 4. Bundle Summary (The full Column M entry)
                 bundleDetails: cart
-                  .filter(i => 'items' in i.product) // Only bundles
-                  .map(i => {
-                    const tSize = i.bundleSizes?.tee || 'N/A';
-                    const vSize = i.bundleSizes?.varsity || 'N/A';
-                    return `${i.product.name} [Tee: ${tSize}, Varsity: ${vSize}] (x${i.quantity})`;
-                  })
+                  .filter(i => 'items' in i.product)
+                  .map(i => `${i.product.name} [${i.size}] (x${i.quantity})`)
                   .join(' | '),
 
                 totalPrice: `₹${total}`,
@@ -1414,9 +1409,11 @@ function AppContent() {
               setView('success');
               setCart([]);
               localStorage.removeItem('cart');
+            } else {
+              setNotification(finalData.error || "Failed to finalize sync");
             }
           } catch (err) {
-            setNotification("Payment successful, but database failed to update.");
+            setNotification("Server synchronization failed during payment completion");
           }
         },
         prefill: { name: fullName, email: user.email, contact: phone },
