@@ -128,11 +128,32 @@ const HorizontalScroller = ({ children, title, subtitle, animate = false }: { ch
     </div>
   );
 };
-
 const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onClose: () => void, onAddToCart: (p: Product, size?: string) => void }) => {
   const [currentImg, setCurrentImg] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string>("L");
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    // We only update coordinates if zoomed in
+    if (!isZoomed) return;
+
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+
+    setMousePos({ x, y });
+  };
+
+  const toggleZoom = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent closing the modal
+    setIsZoomed(!isZoomed);
+
+    // If we are zooming out, reset the view to center
+    if (isZoomed) {
+      setMousePos({ x: 50, y: 50 });
+    }
+  };
 
   return (
     <motion.div
@@ -153,38 +174,46 @@ const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onC
         </button>
 
         {/* Image Section */}
-        <div className="md:w-3/5 relative bg-black/10 flex items-center justify-center overflow-hidden h-64 md:h-auto select-none">
+        <div
+          className={`md:w-3/5 relative bg-black/10 flex items-center justify-center overflow-hidden h-64 md:h-auto select-none transition-colors duration-300 ${isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
+          onMouseMove={handleMouseMove}
+          onClick={toggleZoom}
+        >
           <AnimatePresence mode="wait">
             <motion.img
               key={currentImg}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               src={product.images[currentImg]}
               alt={product.name}
-              className={`w-full h-full object-contain transition-transform duration-500 cursor-zoom-in ${isZoomed ? 'scale-150' : 'scale-100'}`}
-              onClick={() => setIsZoomed(!isZoomed)}
+              style={{
+                transformOrigin: `${mousePos.x}% ${mousePos.y}%`,
+                transition: isZoomed ? 'transform 0.1s ease-out' : 'transform 0.4s ease-in-out'
+              }}
+              className={`w-full h-full object-contain pointer-events-none ${isZoomed ? 'scale-[2.5]' : 'scale-100'
+                }`}
             />
           </AnimatePresence>
 
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-            {product.images.map((_, idx) => (
-              <div
-                key={idx}
-                onClick={() => setCurrentImg(idx)}
-                className={`w-2 h-2 rounded-full cursor-pointer transition-all ${idx === currentImg ? 'bg-primary w-6' : 'bg-primary/20'}`}
-              />
-            ))}
-          </div>
-
-          <button onClick={(e) => { e.stopPropagation(); setCurrentImg(prev => (prev - 1 + product.images.length) % product.images.length); }} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-all">
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); setCurrentImg(prev => (prev + 1) % product.images.length); }} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-all">
-            <ChevronRight className="w-6 h-6" />
-          </button>
+          {/* Navigation Arrows - Disabled while zoomed to prevent UI chaos */}
+          {!isZoomed && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setCurrentImg(prev => (prev - 1 + product.images.length) % product.images.length); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-all"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setCurrentImg(prev => (prev + 1) % product.images.length); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-all"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
         </div>
-
         {/* Info Section */}
         <div className="md:w-2/5 p-8 flex flex-col h-full overflow-y-auto">
           <div className="flex-grow">
@@ -346,7 +375,7 @@ const BundleModal = ({ bundle, onClose, onAddToCart }: BundleModalProps) => {
           onClick={handleAdd}
           className="w-full py-4 bg-primary text-on-primary rounded-xl font-headline text-lg uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg mt-auto flex items-center justify-center gap-2"
         >
-          Add Bundle to Vault
+          Add Bundle to Cart
           <ChevronRight className="w-5 h-5" />
         </button>
       </motion.div>
@@ -594,31 +623,46 @@ const StorefrontView = ({
           ))}
         </HorizontalScroller>
       </section>
-
       {/* Bundles Section */}
       <section className="max-w-7xl mx-auto px-6 lg:px-8 mb-32">
         <HorizontalScroller
-          title="The Collection Bundles"
-          subtitle="Curated sets for a complete archival experience."
+          title="Bundles"
+          subtitle="Get them bundled at a lower price."
         >
           {BUNDLES.map(bundle => (
-            <div key={bundle.id} className={`flex-shrink-0 w-80 p-8 rounded-xl border border-outline-variant/20 snap-start hover:shadow-xl transition-all duration-300 ${bundle.colorClass}`}>
-              <div className="bg-white/10 w-14 h-14 rounded-full flex items-center justify-center mb-8">
-                {bundle.icon === 'auto_awesome' && <Sparkles className="w-8 h-8" />}
-                {bundle.icon === 'layers' && <Layers className="w-8 h-8" />}
-                {bundle.icon === 'inventory_2' && <Archive className="w-8 h-8" />}
+            <div key={bundle.id} className="group flex-shrink-0 w-80 snap-start">
+              <div
+                className={`rounded-xl p-4 overflow-hidden cursor-pointer transition-all duration-300 shadow-sm group-hover:shadow-xl ${bundle.colorClass}`}
+                onClick={() => onAddBundle(bundle)}
+              >
+                <img
+                  alt={bundle.name}
+                  className="w-full aspect-square object-cover rounded-lg group-hover:scale-105 transition-transform duration-700"
+                  src={bundle.image}
+                />
               </div>
-              <h3 className="font-headline text-2xl mb-3">{bundle.name}</h3>
-              <p className="opacity-80 text-sm mb-8 leading-relaxed">{bundle.description}</p>
-              <div className="flex justify-between items-end border-t border-current/20 pt-6">
-                <span className="font-headline text-3xl">₹{bundle.price}</span>
-                <button
-                  onClick={() => onAddBundle(bundle)}
-                  className="text-xs font-bold uppercase tracking-widest border-b-2 border-current pb-1 hover:opacity-70 transition-opacity"
-                >
-                  Select Bundle
-                </button>
+
+              <div className="mt-4 flex justify-between items-start">
+                <div className="cursor-pointer" onClick={() => onAddBundle(bundle)}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-headline text-xl text-primary uppercase">{bundle.name}</h3>
+                  </div>
+                  {/* Minimalist Bundle Content Text */}
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-secondary/70">
+                    {bundle.id === 'starter-olt' && "Tee + Slam Book"}
+                    {bundle.id === 'the-duo-olt' && "Varsity + Slam Book"}
+                    {bundle.id === 'full-archive-olt' && "Tee + Varsity + Slam Book "}
+                  </p>
+                </div>
+                <span className="font-headline text-lg text-secondary">₹{bundle.price}</span>
               </div>
+
+              <button
+                onClick={() => onAddBundle(bundle)}
+                className="mt-4 w-full py-3 border border-primary text-primary text-xs font-bold uppercase tracking-widest hover:bg-primary hover:text-on-primary transition-colors inline-block text-center"
+              >
+                Select Bundle
+              </button>
             </div>
           ))}
         </HorizontalScroller>
@@ -656,7 +700,7 @@ const StorefrontView = ({
               <Radio className={`text-on-secondary-container w-6 h-6 ${isPlaying ? 'animate-pulse' : ''}`} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-label text-[10px] text-primary uppercase font-bold tracking-widest truncate">ARCHIVE RADIO — OLT '26</p>
+              <p className="font-label text-[10px] text-primary uppercase font-bold tracking-widest truncate">RADIO — OLT '26</p>
               <p className="font-body text-xs text-on-surface truncate font-medium">
                 Side {currentSong + 1}: {currentSong === 0 ? "Woh Din" : "Mustafa Mustafa"}
               </p>
@@ -897,13 +941,13 @@ const SuccessView = ({ onReturn, key }: { onReturn: () => void, key?: string }) 
     </div>
     <h1 className="font-headline text-4xl md:text-5xl text-primary font-black tracking-tighter mb-6">ORDER CONFIRMED.</h1>
     <p className="font-body text-xl text-secondary max-w-md mx-auto mb-12 leading-relaxed">
-      Your order has been confirmed. Follow <a href="https://www.instagram.com/graphiquenitt/" target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline">@graphiquenitt</a> for further updates.
+      Your order has been confirmed. Follow <a href="https://www.instagram.com/graphique.nitt/" target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline">@graphique.nitt</a> for further updates.
     </p>
     <button
       onClick={onReturn}
       className="bg-surface-container-highest text-primary px-10 py-4 rounded-full font-headline text-lg font-bold uppercase tracking-widest hover:bg-primary hover:text-on-primary transition-all shadow-lg"
     >
-      Return to Archive
+      Return to Home
     </button>
   </motion.main>
 );
@@ -1071,39 +1115,40 @@ function AppContent() {
     const timer = setTimeout(async () => {
       const total = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
       try {
-        const response = await fetch(`${API_BASE}/orders`, {
+        await fetch(`${API_BASE}/orders`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            orderId: 'DRAFT', // Placeholder for drafts
+            orderId: 'DRAFT',
             userName: fullName || user.name,
             userEmail: user.email,
             phone,
-            teeDetails: cart.filter(i => i.product.id === 'tee-olt-26').map(i => `Size ${i.size || (i.bundleSizes?.tee) || 'N/A'} (x${i.quantity})`).join(', '),
-            varsityDetails: cart.filter(i => i.product.id === 'varsity-olt-26').map(i => `Size ${i.size || (i.bundleSizes?.varsity) || 'N/A'} (x${i.quantity})`).join(', '),
-            slamDetails: cart.filter(i => i.product.id === 'slam-book-olt-26').map(i => `(x${i.quantity})`).join(', '),
+            gender, // Added Gender
+            teeDetails: cart
+              .filter(i => i.product.id === 'tee-olt-26' || (i.product as any).items?.includes('tee-olt-26'))
+              .map(i => `Size ${i.size || i.bundleSizes?.tee || 'N/A'} (x${i.quantity})`).join(', '),
+            varsityDetails: cart
+              .filter(i => i.product.id === 'varsity-olt-26' || (i.product as any).items?.includes('varsity-olt-26'))
+              .map(i => `Size ${i.size || i.bundleSizes?.varsity || 'N/A'} (x${i.quantity})`).join(', '),
+            slamDetails: cart
+              .filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26'))
+              .map(i => `(x${i.quantity})`).join(', '),
+            bundleDetails: cart // Added Bundle Section
+              .filter(i => 'items' in i.product)
+              .map(i => `${i.product.name} (x${i.quantity})`).join(' | '),
             totalPrice: `₹${total}`,
             status: 'InCart'
           }),
         });
-        const data = await response.json();
-        if (data.success) {
-          setSyncStatus('saved');
-          setSyncError(null);
-          setTimeout(() => setSyncStatus('idle'), 3000);
-        } else {
-          setSyncStatus('error');
-          setSyncError(data.details || data.error || 'Unknown server error');
-        }
+        setSyncStatus('saved');
+        setTimeout(() => setSyncStatus('idle'), 3000);
       } catch (err: any) {
-        console.error('Draft Sync Failed', err);
         setSyncStatus('error');
-        setSyncError(err.message || 'Network connection failed');
       }
-    }, 2000); // 2 second debounce
+    }, 2000);
 
     return () => clearTimeout(timer);
-  }, [cart, phone, fullName, user]);
+  }, [cart, phone, fullName, gender, user]); // Added gender to dependency array
 
   const fetchOrders = async () => {
     if (!user) return;
@@ -1133,7 +1178,7 @@ function AppContent() {
         localStorage.setItem('user', JSON.stringify(data.user));
         setNotification(`Welcome back, ${data.user.given_name}`);
       } else {
-        setNotification("Login Failed: The archive could not verify your identity.");
+        setNotification("Login Failed: The server could not verify your identity.");
       }
     } catch (err) {
       console.error(err);
@@ -1176,25 +1221,23 @@ function AppContent() {
   const addBundleToCart = (bundle: Bundle) => {
     setSelectedBundle(bundle);
   };
-
   const handleCheckout = async () => {
     if (cart.length === 0) {
-      setNotification("Your vault is empty");
+      setNotification("Your cart is empty");
       return;
     }
     if (!user) {
-      setNotification("Please sign in to preserve artifacts");
+      setNotification("Please sign in to preserve items");
       return;
     }
     if (!phone || !gender || !fullName) {
-      setNotification("Please fill in all Preservation Registry details.");
+      setNotification("Please fill in all Shipping details.");
       return;
     }
 
     const total = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
 
     try {
-      // 1. Create Order on Server
       const orderResponse = await fetch(`${API_BASE}/payment/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1207,7 +1250,6 @@ function AppContent() {
         return;
       }
 
-      // 2. Initialize Razorpay popup
       const options = {
         key: 'rzp_live_SeGSjBujn5Tfjv',
         amount: orderData.order.amount,
@@ -1216,14 +1258,7 @@ function AppContent() {
         description: "OLT '26 Archival Transaction",
         image: PRODUCTS[0]?.image || "",
         order_id: orderData.order.id,
-        method: {
-          upi: true,
-          card: true,
-          netbanking: true,
-          wallet: true,
-        },
         handler: async function (response: any) {
-          // 3. Complete Order on Server
           try {
             const finalResponse = await fetch(`${API_BASE}/orders`, {
               method: 'POST',
@@ -1234,9 +1269,21 @@ function AppContent() {
                 userName: fullName,
                 userEmail: user.email,
                 phone,
-                teeDetails: cart.filter(i => i.product.id === 'tee-olt-26').map(i => `Size ${i.size || (i.bundleSizes?.tee) || 'N/A'} (x${i.quantity})`).join(', '),
-                varsityDetails: cart.filter(i => i.product.id === 'varsity-olt-26').map(i => `Size ${i.size || (i.bundleSizes?.varsity) || 'N/A'} (x${i.quantity})`).join(', '),
-                slamDetails: cart.filter(i => i.product.id === 'slam-book-olt-26').map(i => `(x${i.quantity})`).join(', '),
+                gender, // Added Gender
+                // Extract details for individual items or bundles
+                teeDetails: cart
+                  .filter(i => i.product.id === 'tee-olt-26' || (i.product as any).items?.includes('tee-olt-26'))
+                  .map(i => `Size ${i.size || i.bundleSizes?.tee || 'N/A'} (x${i.quantity})`).join(', '),
+                varsityDetails: cart
+                  .filter(i => i.product.id === 'varsity-olt-26' || (i.product as any).items?.includes('varsity-olt-26'))
+                  .map(i => `Size ${i.size || i.bundleSizes?.varsity || 'N/A'} (x${i.quantity})`).join(', '),
+                slamDetails: cart
+                  .filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26'))
+                  .map(i => `(x${i.quantity})`).join(', '),
+                // New specific section for Bundles
+                bundleDetails: cart
+                  .filter(i => 'items' in i.product)
+                  .map(i => `${i.product.name} [Tee: ${i.bundleSizes?.tee || 'N/A'}, Varsity: ${i.bundleSizes?.varsity || 'N/A'}] (x${i.quantity})`).join(' | '),
                 totalPrice: `₹${total}`,
                 status: 'PaymentDone'
               }),
@@ -1251,23 +1298,14 @@ function AppContent() {
               setNotification(finalData.error || "Failed to finalize database sync");
             }
           } catch (err) {
-            setNotification("Archive synchronization failed during payment completion");
+            setNotification("Server synchronization failed during payment completion");
           }
         },
-        prefill: {
-          name: fullName,
-          email: user.email,
-          contact: phone
-        },
-        theme: {
-          color: "#E2AA45"
-        }
+        prefill: { name: fullName, email: user.email, contact: phone },
+        theme: { color: "#E2AA45" }
       };
 
       const rzp = new (window as any).Razorpay(options);
-      rzp.on('payment.failed', function (response: any) {
-        setNotification(`Payment Failed: ${response.error.description}`);
-      });
       rzp.open();
 
     } catch (err) {
@@ -1369,8 +1407,8 @@ function AppContent() {
               syncStatus === 'saved' ? 'bg-green-500' : 'bg-red-500'
               }`} />
             <span className="text-[10px] font-label uppercase tracking-[0.2em] text-on-surface">
-              {syncStatus === 'syncing' ? 'Archive Syncing...' :
-                syncStatus === 'saved' ? 'Vault Entry Updated' :
+              {syncStatus === 'syncing' ? 'Server Syncing...' :
+                syncStatus === 'saved' ? 'Cart Entry Updated' :
                   `Sync Error: ${syncError || 'Check Console'}`}
             </span>
           </motion.div>
