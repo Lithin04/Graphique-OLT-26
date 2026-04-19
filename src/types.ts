@@ -18,6 +18,7 @@ export interface Bundle {
   description: string;
   price: number;
   icon: string;
+  image: string;
   items: string[];
   colorClass: string;
 }
@@ -31,4 +32,10 @@ export interface CartItem {
     tee?: string;
     varsity?: string;
   };
+}
+
+export interface BundleModalProps {
+  bundle: Bundle;
+  onClose: () => void;
+  onAddToCart: (item: Product | Bundle, size?: string) => void;
 }

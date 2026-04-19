@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { useRef } from 'react';
 import { PRODUCTS, BUNDLES } from './constants';
-import { Product, CartItem, Bundle } from './types';
+import { Product, CartItem, Bundle, BundleModalProps } from './types';
 import { GoogleOAuthProvider, GoogleLogin, googleLogout } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 
@@ -204,14 +204,14 @@ const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onC
                 <span className="text-sm font-medium">{product.color}</span>
               </div>
               <div className="flex justify-between items-center border-b border-outline-variant/30 pb-2">
-                <span className="text-xs uppercase font-bold tracking-widest opacity-60">Material</span>
-                <span className="text-sm font-medium">{product.material}</span>
+                {/* <span className="text-xs uppercase font-bold tracking-widest opacity-60">Material</span>
+                <span className="text-sm font-medium">{product.material}</span> */}
               </div>
               {product.requiresSize && (
                 <div className="flex flex-col gap-2 border-b border-outline-variant/30 pb-4">
                   <span className="text-xs uppercase font-bold tracking-widest opacity-60">Size Selection</span>
                   <div className="flex gap-2">
-                    {['S', 'M', 'L', 'XL', 'XXL'].map(sz => (
+                    {['S', 'M', 'L', 'XL', '2XL'].map(sz => (
                       <button
                         key={sz}
                         onClick={() => setSelectedSize(sz)}
@@ -230,7 +230,7 @@ const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onC
             onClick={() => { onAddToCart(product, product.requiresSize ? selectedSize : undefined); onClose(); }}
             className="w-full py-4 bg-primary text-on-primary rounded-xl font-headline text-lg uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg mt-auto"
           >
-            Add to Ritual
+            Add to Cart
           </button>
         </div>
       </motion.div>
@@ -238,27 +238,23 @@ const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onC
   );
 };
 
-const BundleModal = ({ bundle, onClose, onAddToCart }: { bundle: Bundle, onClose: () => void, onAddToCart: (product: Product, size?: string, bundleSizes?: { tee?: string, varsity?: string }) => void }) => {
+const BundleModal = ({ bundle, onClose, onAddToCart }: BundleModalProps) => {
   const containsTee = bundle.items.includes('tee-olt-26');
   const containsVarsity = bundle.items.includes('varsity-olt-26');
+  const containsSlamBook = bundle.items.includes('slam-book-olt-26'); // Detection for Slam Book
+
   const [teeSize, setTeeSize] = useState<string>("L");
   const [varsitySize, setVarsitySize] = useState<string>("L");
 
   const handleAdd = () => {
-    bundle.items.forEach(productId => {
-      // Find the product instance from the id
-      const product = PRODUCTS.find(p => p.id === productId);
-      if (product) {
-        let selectedSize: string | undefined = undefined;
-        if (product.id === 'tee-olt-26') selectedSize = teeSize;
-        if (product.id === 'varsity-olt-26') selectedSize = varsitySize;
-        
-        onAddToCart(product, selectedSize, { 
-          tee: containsTee ? teeSize : undefined, 
-          varsity: containsVarsity ? varsitySize : undefined 
-        });
-      }
-    });
+    const sizeParts = [];
+    if (containsTee) sizeParts.push(`Tee: ${teeSize}`);
+    if (containsVarsity) sizeParts.push(`Varsity: ${varsitySize}`);
+    if (containsSlamBook) sizeParts.push(`Slam Book`); // Adds text to the cart display
+
+    const combinedSizeText = sizeParts.length > 0 ? sizeParts.join(" | ") : undefined;
+
+    onAddToCart(bundle, combinedSizeText);
     onClose();
   };
 
@@ -270,6 +266,7 @@ const BundleModal = ({ bundle, onClose, onAddToCart }: { bundle: Bundle, onClose
       className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-8"
     >
       <div className="absolute inset-0 bg-background/50 backdrop-blur-3xl" onClick={onClose} />
+
       <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -280,22 +277,34 @@ const BundleModal = ({ bundle, onClose, onAddToCart }: { bundle: Bundle, onClose
           <X className="w-6 h-6" />
         </button>
 
-        <span className="font-label text-xs uppercase tracking-[0.3em] text-secondary mb-2 block animate-pulse">Bundle Configurator</span>
-        <h2 className="font-headline text-3xl text-primary font-bold tracking-tighter mb-4">{bundle.name}</h2>
+        <span className="font-label text-xs uppercase tracking-[0.3em] text-secondary mb-2 block animate-pulse">
+          Bundle
+        </span>
+
+        <h2 className="font-headline text-3xl text-primary font-bold tracking-tighter mb-2">
+          {bundle.name}
+        </h2>
+
+        <div className="text-2xl font-headline text-primary mb-4">
+          ₹{bundle.price}
+        </div>
+
         <p className="font-body text-on-surface-variant mb-8 leading-relaxed">
           {bundle.description}
         </p>
 
-        <div className="space-y-6 mb-8">
+        <div className="space-y-4 mb-8">
+          {/* T-SHIRT SELECTION */}
           {containsTee && (
-            <div>
+            <div className="bg-surface-container rounded-2xl p-4 border border-outline-variant/10">
               <label className="font-label text-xs uppercase tracking-widest text-primary block mb-3">T-Shirt Size</label>
               <div className="flex gap-2">
                 {['S', 'M', 'L', 'XL', 'XXL'].map(sz => (
                   <button
                     key={sz}
                     onClick={() => setTeeSize(sz)}
-                    className={`w-10 h-10 rounded-full font-headline text-sm border flex items-center justify-center transition-all ${teeSize === sz ? 'bg-primary text-on-primary border-primary' : 'border-outline-variant/30 text-primary hover:border-primary/60'}`}
+                    className={`w-10 h-10 rounded-full font-headline text-sm border flex items-center justify-center transition-all ${teeSize === sz ? 'bg-primary text-on-primary border-primary shadow-lg' : 'border-outline-variant/30 text-primary hover:border-primary/60'
+                      }`}
                   >
                     {sz}
                   </button>
@@ -303,19 +312,31 @@ const BundleModal = ({ bundle, onClose, onAddToCart }: { bundle: Bundle, onClose
               </div>
             </div>
           )}
+
+          {/* VARSITY SELECTION */}
           {containsVarsity && (
-            <div>
-              <label className="font-label text-xs uppercase tracking-widest text-primary block mb-3">Varsity Jacket Size</label>
+            <div className="bg-surface-container rounded-2xl p-4 border border-outline-variant/10">
+              <label className="font-label text-xs uppercase tracking-widest text-secondary block mb-3">Varsity Jacket Size</label>
               <div className="flex gap-2">
                 {['S', 'M', 'L', 'XL', 'XXL'].map(sz => (
                   <button
                     key={sz}
                     onClick={() => setVarsitySize(sz)}
-                    className={`w-10 h-10 rounded-full font-headline text-sm border flex items-center justify-center transition-all ${varsitySize === sz ? 'bg-secondary text-on-secondary border-secondary' : 'border-outline-variant/30 text-secondary hover:border-secondary/60'}`}
+                    className={`w-10 h-10 rounded-full font-headline text-sm border flex items-center justify-center transition-all ${varsitySize === sz ? 'bg-secondary text-on-secondary border-secondary shadow-lg' : 'border-outline-variant/30 text-secondary hover:border-secondary/60'
+                      }`}
                   >
                     {sz}
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* SLAM BOOK INFO (STATIC) */}
+          {containsSlamBook && (
+            <div className="bg-surface-container rounded-2xl p-4 border border-outline-variant/10 flex items-center justify-between">
+              <div>
+                <span className="font-label text-xs uppercase tracking-widest text-primary block mb-3">Slam Book</span>
               </div>
             </div>
           )}
@@ -323,7 +344,7 @@ const BundleModal = ({ bundle, onClose, onAddToCart }: { bundle: Bundle, onClose
 
         <button
           onClick={handleAdd}
-          className="w-full py-4 bg-primary text-on-primary rounded-xl font-headline text-lg uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg mt-auto flex items-center justify-center gap-2"
+          className="w-full py-4 bg-primary text-on-primary rounded-xl font-headline text-lg uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg mt-auto flex items-center justify-center gap-2"
         >
           Add Bundle to Vault
           <ChevronRight className="w-5 h-5" />
@@ -395,17 +416,15 @@ const Footer = () => (
   <footer className="w-full py-16 px-10 flex flex-col items-center gap-8 bg-surface-container-high text-primary font-body text-sm tracking-normal">
     <div className="flex flex-col items-center gap-3">
       <img alt="Logo" className="h-12 w-auto mix-blend-multiply opacity-80" src="/assets/image.png" />
-      <div className="font-headline font-bold italic text-primary text-3xl uppercase tracking-tighter">GRAPHIQUE</div>
-    </div>
-    <div className="flex flex-wrap justify-center gap-8 md:gap-16">
-      {['The Vault', 'Sizing Guide', 'Shipping Rituals', 'Privacy'].map(link => (
-        <a key={link} className="text-secondary hover:text-primary transition-opacity" href="#">{link}</a>
-      ))}
+      <div className="font-headline font-bold italic text-primary text-3xl uppercase tracking-tighter">
+        WITH ❤️ FROM GRAPHIQUE
+      </div>
     </div>
     <div className="text-center opacity-70 max-w-md">
-      <p className="font-headline italic text-lg mb-2">Preserved in high-fidelity.</p>
-      <p>© 1978-2024 THE ARCHIVIST STUDIO.</p>
-      <p className="mt-4 text-[10px] uppercase tracking-[0.2em]">Safekeeping the legacy, one stitch at a time. Limited runs only.</p>
+      <p className="font-headline italic text-lg mb-2">Made for the days we’ll look back on.</p>
+      <p>© 2020-2026 GRAPHIQUE.</p>
+      <p className="mt-4 text-[10px] uppercase tracking-[0.2em]">We were here.
+        We made it count</p>
     </div>
   </footer>
 );
@@ -435,8 +454,8 @@ const IntroView = ({ onComplete }: { onComplete: () => void, key?: string }) => 
               className="h-full bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
             />
           </div>
-          
-          <motion.button 
+
+          <motion.button
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.8 }}
@@ -545,7 +564,7 @@ const StorefrontView = ({
 
       {/* Limited Drop */}
       <section className="max-w-7xl mx-auto px-6 lg:px-8 mb-32 mt-12">
-        <HorizontalScroller title="Class of 2026 Highlights" subtitle="The official Graphique NITT memorabilia collection.">
+        <HorizontalScroller title="Class of 2026" subtitle="The official Graphique farewell collection.">
           {PRODUCTS.map(product => (
             <div key={product.id} className="group flex-shrink-0 w-80 snap-start">
               <div
@@ -569,33 +588,11 @@ const StorefrontView = ({
                 onClick={() => product.requiresSize ? onProductClick(product) : onAddToCart(product)}
                 className="mt-4 w-full py-3 border border-primary text-primary text-xs font-bold uppercase tracking-widest hover:bg-primary hover:text-on-primary transition-colors inline-block text-center"
               >
-                Add to Ritual
+                Add to Cart
               </button>
             </div>
           ))}
         </HorizontalScroller>
-      </section>
-
-      {/* Narrative Section */}
-      <section className="bg-primary text-on-primary py-32 px-6 lg:px-8 mb-32 relative overflow-hidden">
-        <div className="absolute -right-24 -top-24 w-96 h-96 bg-primary-container rounded-full blur-3xl opacity-30"></div>
-        <div className="max-w-4xl mx-auto text-center">
-          <span className="font-label text-xs uppercase tracking-[0.3em] opacity-70 mb-8 block">Preserving the Frequency</span>
-          <h2 className="font-headline text-4xl md:text-5xl italic leading-tight mb-10 uppercase tracking-tighter">THE STUDIO NEVER TRULY CLOSES.</h2>
-          <div className="grid md:grid-cols-2 gap-12 text-left">
-            <p className="font-body text-xl opacity-90 leading-relaxed italic">
-              Graphique is not just a club at NITT; it was the hum of fluorescent lights at 2 AM, the smell of fresh ink on heavy cardstock, and the unspoken pact to create something that outlasted our time together.
-            </p>
-            <p className="font-body text-xl opacity-90 leading-relaxed italic">
-              As we turn the page for the Class of 2026, we offer these OLT artifacts—not as mere merchandise, but as containers for the legacy we built. Every stitch, every page, every fiber is meant to keep the light from fading.
-            </p>
-          </div>
-          <div className="mt-16 flex justify-center items-center gap-6">
-            <div className="w-24 h-[1px] bg-on-primary/30"></div>
-            <span className="font-label text-xs uppercase tracking-widest opacity-60 italic">Established Graphique NITT — OLT '26</span>
-            <div className="w-24 h-[1px] bg-on-primary/30"></div>
-          </div>
-        </div>
       </section>
 
       {/* Bundles Section */}
@@ -627,6 +624,28 @@ const StorefrontView = ({
         </HorizontalScroller>
       </section>
 
+      {/* Narrative Section */}
+      <section className="bg-primary text-on-primary py-32 px-6 lg:px-8 mb-0 relative overflow-hidden">
+        <div className="absolute -right-24 -top-24 w-96 h-96 bg-primary-container rounded-full blur-3xl opacity-30"></div>
+        <div className="max-w-4xl mx-auto text-center">
+          <span className="font-label text-xs uppercase tracking-[0.3em] opacity-70 mb-8 block">Sic Mundus Creatus Est.</span>
+          <h2 className="font-headline text-4xl md:text-5xl italic leading-tight mb-10 uppercase tracking-tighter">Graphique</h2>
+          <div className="grid md:grid-cols-2 gap-12 text-left">
+            <p className="font-body text-xl opacity-90 leading-relaxed italic">
+              Started with a few people who liked making things look better. Somehow turned into a full-blown design squad that runs on caffeine, chaos, and last-minute brilliance.
+            </p>
+            <p className="font-body text-xl opacity-90 leading-relaxed italic">
+              We’ve messed up files, fixed them at 3AM, argued over fonts, and still managed to put out work we’re proud of. If you’ve seen something cool on campus lately… yeah, that was probably us.
+            </p>
+          </div>
+          <div className="mt-16 flex justify-center items-center gap-6">
+            <div className="w-24 h-[1px] bg-on-primary/30"></div>
+            <span className="font-label text-xs uppercase tracking-widest opacity-60 italic">Graphique — OLT '26</span>
+            <div className="w-24 h-[1px] bg-on-primary/30"></div>
+          </div>
+        </div>
+      </section>
+
       {/* Radio Widget */}
       <div className="fixed bottom-8 left-8 z-50">
         <div
@@ -648,9 +667,9 @@ const StorefrontView = ({
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-between border-t border-outline-variant/10 pt-2">
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); onSongChange('prev'); }}
               className="text-secondary/70 hover:text-primary transition-colors p-1"
             >
@@ -659,17 +678,17 @@ const StorefrontView = ({
             <button onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="text-secondary hover:text-primary transition-colors">
               {isPlaying ? <PauseCircle className="w-6 h-6" /> : <div className="w-6 h-6 border-2 border-primary rounded-full flex items-center justify-center"><div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-primary border-b-[4px] border-b-transparent ml-0.5"></div></div>}
             </button>
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); onSongChange('next'); }}
               className="text-secondary/70 hover:text-primary transition-colors p-1"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
-          
+
           <div className="flex items-center gap-3 px-1">
             <Volume2 className="w-4 h-4 text-secondary/60" />
-            <input 
+            <input
               type="range"
               min="0"
               max="1"
@@ -699,8 +718,8 @@ const VaultView = ({
   onUpdateQuantity: (id: string, delta: number) => void,
   onRemove: (id: string) => void,
   onCheckout: () => void,
-  formData: { phone: string, address: string, fullName: string },
-  setFormData: { setPhone: (s: string) => void, setAddress: (s: string) => void, setFullName: (s: string) => void },
+  formData: { phone: string, fullName: string, gender: string },
+  setFormData: { setPhone: (s: string) => void, setFullName: (s: string) => void, setGender: (s: string) => void },
   key?: string,
   userEmail?: string
 }) => {
@@ -714,8 +733,8 @@ const VaultView = ({
       className="max-w-7xl mx-auto px-6 py-12 lg:py-20"
     >
       <div className="mb-12">
-        <h1 className="font-headline text-4xl md:text-5xl text-primary font-extrabold tracking-tighter mb-4">YOUR VAULT</h1>
-        <p className="font-body text-secondary text-lg uppercase tracking-widest">Review your selection before preserving history.</p>
+        <h1 className="font-headline text-4xl md:text-5xl text-primary font-extrabold tracking-tighter mb-4">CART</h1>
+        <p className="font-body text-secondary text-lg uppercase tracking-widest">Review your selection before proceeding for payment.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
@@ -724,7 +743,7 @@ const VaultView = ({
           <div className="space-y-6">
             {cart.length === 0 ? (
               <div className="bg-surface-container-low rounded-xl p-12 text-center">
-                <p className="text-on-surface-variant font-headline text-2xl">Your vault is empty.</p>
+                <p className="text-on-surface-variant font-headline text-2xl">Your cart is empty.</p>
               </div>
             ) : (
               cart.map(item => (
@@ -743,7 +762,7 @@ const VaultView = ({
                     )}
                     {item.bundleSizes && (
                       <p className="text-secondary font-label text-[10px] uppercase tracking-widest mt-1 opacity-80">
-                        {item.bundleSizes.tee && `Tee: ${item.bundleSizes.tee}`} 
+                        {item.bundleSizes.tee && `Tee: ${item.bundleSizes.tee}`}
                         {item.bundleSizes.tee && item.bundleSizes.varsity && ' | '}
                         {item.bundleSizes.varsity && `Jacket: ${item.bundleSizes.varsity}`}
                       </p>
@@ -781,23 +800,23 @@ const VaultView = ({
           {/* Form */}
           <div className="bg-surface-container-high rounded-xl p-8 space-y-8">
             <div>
-              <h2 className="font-headline text-3xl text-on-surface mb-2">Preservation Registry</h2>
-              <p className="text-on-surface-variant font-body">Input your archival credentials for the database.</p>
+              <h2 className="font-headline text-3xl text-on-surface mb-2">Shipping Details</h2>
+              <p className="text-on-surface-variant font-body">Enter your details </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant px-1">Full Name</label>
                 <input
                   className="w-full bg-surface-container-highest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface-variant/40"
-                  placeholder="John Doe"
+                  placeholder="Monkey D Luffy"
                   type="text"
                   value={formData.fullName}
                   onChange={(e) => setFormData.setFullName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant px-1">College ID / Archive ID</label>
-                <input className="w-full bg-surface-container-highest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface-variant/40" placeholder="ARCH-7890-X" type="text" />
+                <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant px-1">Roll No</label>
+                <input className="w-full bg-surface-container-highest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface-variant/40" placeholder="112122065" type="text" />
               </div>
               <div className="md:col-span-1 space-y-2">
                 <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant px-1">Email Address</label>
@@ -813,15 +832,20 @@ const VaultView = ({
                   onChange={(e) => setFormData.setPhone(e.target.value)}
                 />
               </div>
-              <div className="md:col-span-2 space-y-2">
-                <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant px-1">Delivery Address</label>
-                <textarea
-                  className="w-full bg-surface-container-highest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-on-surface-variant/40"
-                  placeholder="Street, City, State, ZIP"
-                  rows={3}
-                  value={formData.address}
-                  onChange={(e) => setFormData.setAddress(e.target.value)}
-                ></textarea>
+              <div className="md:col-span-1 space-y-2">
+                <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant px-1">
+                  Gender
+                </label>
+                <select
+                  className="w-full bg-surface-container-highest border-none rounded-lg p-4 focus:ring-2 focus:ring-primary/20 text-on-surface appearance-none"
+                  value={formData.gender}
+                  onChange={(e) => setFormData.setGender(e.target.value)}
+                >
+                  <option value="" disabled>Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
             </div>
           </div>
@@ -833,12 +857,8 @@ const VaultView = ({
             <h2 className="font-headline text-3xl text-on-surface mb-8 border-b border-outline-variant/30 pb-4">ORDER SUMMARY</h2>
             <div className="space-y-4 mb-8">
               <div className="flex justify-between font-body">
-                <span className="text-on-surface-variant">Archival Items ({cart.length})</span>
+                <span className="text-on-surface-variant">Cart Items ({cart.length})</span>
                 <span className="text-on-surface font-semibold">₹{total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between font-body">
-                <span className="text-on-surface-variant">Shipping Rituals</span>
-                <span className="text-on-surface font-semibold">FREE</span>
               </div>
               <div className="flex justify-between font-body text-primary font-bold text-lg pt-4 border-t border-outline-variant/30">
                 <span>TOTAL</span>
@@ -859,11 +879,6 @@ const VaultView = ({
               Encrypted End-to-End Archival Transaction
             </div>
           </div>
-          <div className="mt-6 flex flex-wrap gap-2">
-            {['High Fidelity', '7-Day Preservation', 'Eco-Ink Packaging'].map(chip => (
-              <span key={chip} className="bg-primary-fixed-dim text-on-primary-fixed px-3 py-1 rounded-full text-[10px] font-label uppercase tracking-wider">{chip}</span>
-            ))}
-          </div>
         </aside>
       </div>
     </motion.main>
@@ -880,9 +895,9 @@ const SuccessView = ({ onReturn, key }: { onReturn: () => void, key?: string }) 
     <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mb-8 shadow-2xl">
       <Lock className="text-on-primary w-10 h-10" />
     </div>
-    <h1 className="font-headline text-4xl md:text-5xl text-primary font-black tracking-tighter mb-6">VAULT SEALED.</h1>
+    <h1 className="font-headline text-4xl md:text-5xl text-primary font-black tracking-tighter mb-6">ORDER CONFIRMED.</h1>
     <p className="font-body text-xl text-secondary max-w-md mx-auto mb-12 leading-relaxed">
-      Your artifacts have been registered in the preservation database. A confirmation ritual has been sent to your email.
+      Your order has been confirmed. Follow <a href="https://www.instagram.com/graphiquenitt/" target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline">@graphiquenitt</a> for further updates.
     </p>
     <button
       onClick={onReturn}
@@ -964,7 +979,7 @@ function AppContent() {
   });
   const [orders, setOrders] = useState<any[]>([]);
   const [phone, setPhone] = useState<string>('');
-  const [address, setAddress] = useState<string>('');
+  const [gender, setGender] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'saved' | 'error'>('idle');
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -989,15 +1004,15 @@ function AppContent() {
       audioRef.current = new Audio(songs[currentSong]);
       audioRef.current.volume = volume;
     }
-    
+
     const audio = audioRef.current;
-    
+
     const handleEnded = () => {
       setCurrentSong(prev => (prev + 1) % songs.length);
     };
 
     audio.addEventListener('ended', handleEnded);
-    
+
     // Explicit track change
     const expectedSrc = window.location.origin + songs[currentSong];
     if (audio.src !== expectedSrc && !audio.src.includes(songs[currentSong])) {
@@ -1143,15 +1158,15 @@ function AppContent() {
   const addToCart = (product: Product, size?: string, bundleSizes?: { tee?: string, varsity?: string }) => {
     setCart(prev => {
       // Find item with exact same product ID AND same size constraints
-      const existing = prev.find(item => 
-        item.product.id === product.id && 
+      const existing = prev.find(item =>
+        item.product.id === product.id &&
         item.size === size &&
         JSON.stringify(item.bundleSizes) === JSON.stringify(bundleSizes)
       );
       if (existing) {
         return prev.map(item => item.id === existing.id ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      
+
       const newItemId = `${product.id}-${size || 'nosize'}-${Math.random().toString(36).substring(2, 6)}`;
       return [...prev, { id: newItemId, product, quantity: 1, size, bundleSizes }];
     });
@@ -1171,7 +1186,7 @@ function AppContent() {
       setNotification("Please sign in to preserve artifacts");
       return;
     }
-    if (!phone || !address || !fullName) {
+    if (!phone || !gender || !fullName) {
       setNotification("Please fill in all Preservation Registry details.");
       return;
     }
@@ -1326,8 +1341,8 @@ function AppContent() {
                   onUpdateQuantity={updateQuantity}
                   onRemove={removeFromCart}
                   onCheckout={handleCheckout}
-                  formData={{ phone, address, fullName }}
-                  setFormData={{ setPhone, setAddress, setFullName }}
+                  formData={{ phone, gender, fullName }}
+                  setFormData={{ setPhone, setGender, setFullName }}
                   userEmail={user?.email}
                 />
               ) : view === 'orders' ? (
