@@ -1339,6 +1339,8 @@ function AppContent() {
         order_id: orderData.order.id,
         handler: async function (response: any) {
           try {
+            const total = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+
             const finalResponse = await fetch(`${API_BASE}/orders`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -1350,28 +1352,19 @@ function AppContent() {
                 phone,
                 gender,
 
-                // 1. T-Shirt Column: Get size from standalone OR bundle
+                // FIX: Extract sizes from standalone OR bundles
                 teeDetails: cart
                   .filter(i => i.product.id === 'tee-olt-26' || i.bundleSizes?.tee)
-                  .map(i => {
-                    const size = i.size || i.bundleSizes?.tee;
-                    return `Size ${size} (x${i.quantity})`;
-                  }).join(', '),
+                  .map(i => `Size ${i.size || i.bundleSizes?.tee} (x${i.quantity})`).join(', '),
 
-                // 2. Varsity Column: Get size from standalone OR bundle
                 varsityDetails: cart
                   .filter(i => i.product.id === 'varsity-olt-26' || i.bundleSizes?.varsity)
-                  .map(i => {
-                    const size = i.size || i.bundleSizes?.varsity;
-                    return `Size ${size} (x${i.quantity})`;
-                  }).join(', '),
+                  .map(i => `Size ${i.size || i.bundleSizes?.varsity} (x${i.quantity})`).join(', '),
 
-                // 3. Slam Book Column
                 slamDetails: cart
-                  .filter(i => i.product.id === 'slam-book-olt-26' || i.product.id.includes('starter') || i.product.id.includes('duo') || i.product.id.includes('full'))
+                  .filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26'))
                   .map(i => `(x${i.quantity})`).join(', '),
 
-                // 4. Bundles Column: Keep this as a summary record
                 bundleDetails: cart
                   .filter(i => 'items' in i.product)
                   .map(i => `${i.product.name} [Tee: ${i.bundleSizes?.tee || 'N/A'}, Varsity: ${i.bundleSizes?.varsity || 'N/A'}] (x${i.quantity})`)
@@ -1389,7 +1382,7 @@ function AppContent() {
               localStorage.removeItem('cart');
             }
           } catch (err) {
-            setNotification("Payment verified, sync failed.");
+            setNotification("Payment successful, but database failed to update.");
           }
         },
         prefill: { name: fullName, email: user.email, contact: phone },
