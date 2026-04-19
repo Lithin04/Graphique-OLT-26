@@ -1179,13 +1179,17 @@ function AppContent() {
     const timer = setTimeout(async () => {
       const total = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
 
-      // --- DEBUGGING STRINGS ---
       const teeString = cart
         .map(i => {
-          // Check standalone size OR bundle size
-          const s = i.size || (i.bundleSizes && i.bundleSizes.tee);
-          if (s && (i.product.id === 'tee-olt-26' || (i.bundleSizes && i.bundleSizes.tee))) {
-            return `Size ${s} (x${i.quantity})`;
+          // If it's a bundle, the size string looks like "Tee: M | Varsity: L"
+          // We search that string for the Tee size
+          if (i.size && i.size.includes('Tee:')) {
+            const match = i.size.match(/Tee:\s*([^\s|]+)/);
+            return match ? `Size ${match[1]} (x${i.quantity})` : null;
+          }
+          // If it's a standalone Tee
+          if (i.product.id === 'tee-olt-26' && i.size) {
+            return `Size ${i.size} (x${i.quantity})`;
           }
           return null;
         })
@@ -1193,24 +1197,24 @@ function AppContent() {
 
       const varsityString = cart
         .map(i => {
-          const s = i.size || (i.bundleSizes && i.bundleSizes.varsity);
-          if (s && (i.product.id === 'varsity-olt-26' || (i.bundleSizes && i.bundleSizes.varsity))) {
-            return `Size ${s} (x${i.quantity})`;
+          if (i.size && i.size.includes('Varsity:')) {
+            const match = i.size.match(/Varsity:\s*([^\s|]+)/);
+            return match ? `Size ${match[1]} (x${i.quantity})` : null;
+          }
+          if (i.product.id === 'varsity-olt-26' && i.size) {
+            return `Size ${i.size} (x${i.quantity})`;
           }
           return null;
         })
         .filter(Boolean).join(', ');
 
+      // For the bundle summary column, we just use the existing item.size string
       const bundleString = cart
         .filter(i => 'items' in i.product)
-        .map(i => {
-          const t = i.bundleSizes?.tee || 'N/A';
-          const v = i.bundleSizes?.varsity || 'N/A';
-          return `${i.product.name} [Tee: ${t}, Varsity: ${v}] (x${i.quantity})`;
-        })
+        .map(i => `${i.product.name} [${i.size}] (x${i.quantity})`)
         .join(' | ');
 
-      console.log("SYNCING DATA:", { teeString, varsityString, bundleString });
+      console.log("REFIXED SYNCING DATA:", { teeString, varsityString, bundleString });
 
       try {
         await fetch(`${API_BASE}/orders`, {
@@ -1231,7 +1235,6 @@ function AppContent() {
           }),
         });
         setSyncStatus('saved');
-        setTimeout(() => setSyncStatus('idle'), 3000);
       } catch (err) {
         setSyncStatus('error');
       }
