@@ -1179,6 +1179,39 @@ function AppContent() {
     const timer = setTimeout(async () => {
       const total = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
 
+      // --- DEBUGGING STRINGS ---
+      const teeString = cart
+        .map(i => {
+          // Check standalone size OR bundle size
+          const s = i.size || (i.bundleSizes && i.bundleSizes.tee);
+          if (s && (i.product.id === 'tee-olt-26' || (i.bundleSizes && i.bundleSizes.tee))) {
+            return `Size ${s} (x${i.quantity})`;
+          }
+          return null;
+        })
+        .filter(Boolean).join(', ');
+
+      const varsityString = cart
+        .map(i => {
+          const s = i.size || (i.bundleSizes && i.bundleSizes.varsity);
+          if (s && (i.product.id === 'varsity-olt-26' || (i.bundleSizes && i.bundleSizes.varsity))) {
+            return `Size ${s} (x${i.quantity})`;
+          }
+          return null;
+        })
+        .filter(Boolean).join(', ');
+
+      const bundleString = cart
+        .filter(i => 'items' in i.product)
+        .map(i => {
+          const t = i.bundleSizes?.tee || 'N/A';
+          const v = i.bundleSizes?.varsity || 'N/A';
+          return `${i.product.name} [Tee: ${t}, Varsity: ${v}] (x${i.quantity})`;
+        })
+        .join(' | ');
+
+      console.log("SYNCING DATA:", { teeString, varsityString, bundleString });
+
       try {
         await fetch(`${API_BASE}/orders`, {
           method: 'POST',
@@ -1189,40 +1222,10 @@ function AppContent() {
             userEmail: user.email,
             phone: phone || 'Pending',
             gender: gender || 'Not Specified',
-
-            // 1. T-Shirt Column: Extract size from standalone or bundle
-            teeDetails: cart
-              .map(i => {
-                const size = i.size || i.bundleSizes?.tee;
-                const isTee = i.product.id === 'tee-olt-26' || i.bundleSizes?.tee;
-                return (isTee && size) ? `Size ${size} (x${i.quantity})` : null;
-              })
-              .filter(Boolean).join(', '),
-
-            // 2. Varsity Column: Extract size from standalone or bundle
-            varsityDetails: cart
-              .map(i => {
-                const size = i.size || i.bundleSizes?.varsity;
-                const isVarsity = i.product.id === 'varsity-olt-26' || i.bundleSizes?.varsity;
-                return (isVarsity && size) ? `Size ${size} (x${i.quantity})` : null;
-              })
-              .filter(Boolean).join(', '),
-
-            // 3. Slam Book Column: Check standalone or bundle items array
-            slamDetails: cart
-              .filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26'))
-              .map(i => `(x${i.quantity})`).join(', '),
-
-            // 4. Bundles Column: Full summary with extracted sizes
-            bundleDetails: cart
-              .filter(i => 'items' in i.product)
-              .map(i => {
-                const tSize = i.bundleSizes?.tee || 'N/A';
-                const vSize = i.bundleSizes?.varsity || 'N/A';
-                return `${i.product.name} [Tee: ${tSize}, Varsity: ${vSize}] (x${i.quantity})`;
-              })
-              .join(' | '),
-
+            teeDetails: teeString,
+            varsityDetails: varsityString,
+            slamDetails: cart.filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26')).map(i => `(x${i.quantity})`).join(', '),
+            bundleDetails: bundleString,
             totalPrice: `₹${total}`,
             status: 'InCart'
           }),
@@ -1231,7 +1234,6 @@ function AppContent() {
         setTimeout(() => setSyncStatus('idle'), 3000);
       } catch (err) {
         setSyncStatus('error');
-        setSyncError("Failed to update draft");
       }
     }, 1500);
 
