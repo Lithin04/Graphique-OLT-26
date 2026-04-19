@@ -1179,10 +1179,6 @@ function AppContent() {
     const timer = setTimeout(async () => {
       const total = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
 
-      // Separate Bundles from Individual Items
-      const bundleItems = cart.filter(i => 'items' in i.product);
-      const individualItems = cart.filter(i => !('items' in i.product));
-
       try {
         await fetch(`${API_BASE}/orders`, {
           method: 'POST',
@@ -1192,27 +1188,40 @@ function AppContent() {
             userName: fullName || user.name,
             userEmail: user.email,
             phone: phone || 'Pending',
-            gender: gender || 'Not Specified', // Ensure this isn't blank
+            gender: gender || 'Not Specified',
 
-            // Separate Column for Bundles
-            bundleDetails: bundleItems
-              .map(i => `${i.product.name} [Tee: ${i.bundleSizes?.tee || 'N/A'}, Varsity: ${i.bundleSizes?.varsity || 'N/A'}] (x${i.quantity})`)
-              .join(' | '),
+            // 1. T-Shirt Column: Extract size from standalone or bundle
+            teeDetails: cart
+              .map(i => {
+                const size = i.size || i.bundleSizes?.tee;
+                const isTee = i.product.id === 'tee-olt-26' || i.bundleSizes?.tee;
+                return (isTee && size) ? `Size ${size} (x${i.quantity})` : null;
+              })
+              .filter(Boolean).join(', '),
 
-            // Individual T-Shirt Column
-            teeDetails: individualItems
-              .filter(i => i.product.id === 'tee-olt-26')
-              .map(i => `Size ${i.size} (x${i.quantity})`).join(', '),
+            // 2. Varsity Column: Extract size from standalone or bundle
+            varsityDetails: cart
+              .map(i => {
+                const size = i.size || i.bundleSizes?.varsity;
+                const isVarsity = i.product.id === 'varsity-olt-26' || i.bundleSizes?.varsity;
+                return (isVarsity && size) ? `Size ${size} (x${i.quantity})` : null;
+              })
+              .filter(Boolean).join(', '),
 
-            // Individual Varsity Column
-            varsityDetails: individualItems
-              .filter(i => i.product.id === 'varsity-olt-26')
-              .map(i => `Size ${i.size} (x${i.quantity})`).join(', '),
-
-            // Slam Book Column
+            // 3. Slam Book Column: Check standalone or bundle items array
             slamDetails: cart
-              .filter(i => i.product.id === 'slam-book-olt-26')
+              .filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26'))
               .map(i => `(x${i.quantity})`).join(', '),
+
+            // 4. Bundles Column: Full summary with extracted sizes
+            bundleDetails: cart
+              .filter(i => 'items' in i.product)
+              .map(i => {
+                const tSize = i.bundleSizes?.tee || 'N/A';
+                const vSize = i.bundleSizes?.varsity || 'N/A';
+                return `${i.product.name} [Tee: ${tSize}, Varsity: ${vSize}] (x${i.quantity})`;
+              })
+              .join(' | '),
 
             totalPrice: `₹${total}`,
             status: 'InCart'
@@ -1222,9 +1231,9 @@ function AppContent() {
         setTimeout(() => setSyncStatus('idle'), 3000);
       } catch (err) {
         setSyncStatus('error');
-        setSyncError("Failed to update database");
+        setSyncError("Failed to update draft");
       }
-    }, 1500); // Slightly faster debounce
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [cart, phone, fullName, gender, user]);
@@ -1354,20 +1363,40 @@ function AppContent() {
 
                 // FIX: Extract sizes from standalone OR bundles
                 teeDetails: cart
-                  .filter(i => i.product.id === 'tee-olt-26' || i.bundleSizes?.tee)
-                  .map(i => `Size ${i.size || i.bundleSizes?.tee} (x${i.quantity})`).join(', '),
+                  .map(i => {
+                    // Check if it's a standalone tee OR a bundle containing a tee
+                    const size = i.size || i.bundleSizes?.tee;
+                    if (size && (i.product.id === 'tee-olt-26' || i.bundleSizes?.tee)) {
+                      return `Size ${size} (x${i.quantity})`;
+                    }
+                    return null;
+                  })
+                  .filter(Boolean)
+                  .join(', '),
 
                 varsityDetails: cart
-                  .filter(i => i.product.id === 'varsity-olt-26' || i.bundleSizes?.varsity)
-                  .map(i => `Size ${i.size || i.bundleSizes?.varsity} (x${i.quantity})`).join(', '),
+                  .map(i => {
+                    // Check if it's a standalone jacket OR a bundle containing a jacket
+                    const size = i.size || i.bundleSizes?.varsity;
+                    if (size && (i.product.id === 'varsity-olt-26' || i.bundleSizes?.varsity)) {
+                      return `Size ${size} (x${i.quantity})`
+                    }
+                    return null;
+                  })
+                  .filter(Boolean)
+                  .join(', '),
 
                 slamDetails: cart
                   .filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26'))
                   .map(i => `(x${i.quantity})`).join(', '),
 
                 bundleDetails: cart
-                  .filter(i => 'items' in i.product)
-                  .map(i => `${i.product.name} [Tee: ${i.bundleSizes?.tee || 'N/A'}, Varsity: ${i.bundleSizes?.varsity || 'N/A'}] (x${i.quantity})`)
+                  .filter(i => 'items' in i.product) // Only bundles
+                  .map(i => {
+                    const tSize = i.bundleSizes?.tee || 'N/A';
+                    const vSize = i.bundleSizes?.varsity || 'N/A';
+                    return `${i.product.name} [Tee: ${tSize}, Varsity: ${vSize}] (x${i.quantity})`;
+                  })
                   .join(' | '),
 
                 totalPrice: `₹${total}`,
