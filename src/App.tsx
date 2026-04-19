@@ -232,10 +232,6 @@ const ProductModal = ({ product, onClose, onAddToCart }: { product: Product, onC
                 <span className="text-xs uppercase font-bold tracking-widest opacity-60">Color</span>
                 <span className="text-sm font-medium">{product.color}</span>
               </div>
-              <div className="flex justify-between items-center border-b border-outline-variant/30 pb-2">
-                {/* <span className="text-xs uppercase font-bold tracking-widest opacity-60">Material</span>
-                <span className="text-sm font-medium">{product.material}</span> */}
-              </div>
               {product.requiresSize && (
                 <div className="flex flex-col gap-2 border-b border-outline-variant/30 pb-4">
                   <span className="text-xs uppercase font-bold tracking-widest opacity-60">Size Selection</span>
@@ -797,7 +793,6 @@ const VaultView = ({
                   </div>
                   <div className="flex-grow space-y-2 text-center sm:text-left">
                     <h3 className="font-headline text-2xl text-on-surface">{item.product.name}</h3>
-                    <p className="text-on-surface-variant font-medium">{item.product.color} / {item.product.material}</p>
                     <p className="text-primary font-bold text-xl">₹{item.product.price}</p>
                     {item.size && (
                       <p className="text-secondary font-label text-[10px] uppercase tracking-widest mt-1">
@@ -1125,17 +1120,23 @@ function AppContent() {
             phone,
             gender, // Added Gender
             teeDetails: cart
-              .filter(i => i.product.id === 'tee-olt-26' || (i.product as any).items?.includes('tee-olt-26'))
-              .map(i => `Size ${i.size || i.bundleSizes?.tee || 'N/A'} (x${i.quantity})`).join(', '),
+              .map(i => {
+                if (i.product.id === 'tee-olt-26') return `Size ${i.size} (x${i.quantity})`;
+                if (i.bundleSizes?.tee) return `Bundle Tee: ${i.bundleSizes.tee} (x${i.quantity})`;
+                return null;
+              }).filter(Boolean).join(', '),
+
+            // Clean Varsity Column: Only shows Varsity sizes
             varsityDetails: cart
-              .filter(i => i.product.id === 'varsity-olt-26' || (i.product as any).items?.includes('varsity-olt-26'))
-              .map(i => `Size ${i.size || i.bundleSizes?.varsity || 'N/A'} (x${i.quantity})`).join(', '),
+              .map(i => {
+                if (i.product.id === 'varsity-olt-26') return `Size ${i.size} (x${i.quantity})`;
+                if (i.bundleSizes?.varsity) return `Bundle Varsity: ${i.bundleSizes.varsity} (x${i.quantity})`;
+                return null;
+              }).filter(Boolean).join(', '),
+
             slamDetails: cart
               .filter(i => i.product.id === 'slam-book-olt-26' || (i.product as any).items?.includes('slam-book-olt-26'))
               .map(i => `(x${i.quantity})`).join(', '),
-            bundleDetails: cart // Added Bundle Section
-              .filter(i => 'items' in i.product)
-              .map(i => `${i.product.name} (x${i.quantity})`).join(' | '),
             totalPrice: `₹${total}`,
             status: 'InCart'
           }),
@@ -1215,7 +1216,7 @@ function AppContent() {
       const newItemId = `${product.id}-${size || 'nosize'}-${Math.random().toString(36).substring(2, 6)}`;
       return [...prev, { id: newItemId, product, quantity: 1, size, bundleSizes }];
     });
-    setNotification(`Added ${product.name} to ritual`);
+    setNotification(`Added ${product.name} to cart`);
   };
 
   const addBundleToCart = (bundle: Bundle) => {
