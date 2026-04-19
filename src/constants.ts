@@ -75,7 +75,7 @@ export const BUNDLES: Bundle[] = [
     id: 'full-archive-olt',
     name: "Master Collection",
     description: "Total preservation. Includes the Varsity Jacket, Oversized Tshirt, and Slam Book with a collection discount.",
-    price: 1,
+    price: 1299,
     icon: "inventory_2",
     image: "assets/c3.png",
     items: ['tee-olt-26', 'varsity-olt-26', 'slam-book-olt-26'],

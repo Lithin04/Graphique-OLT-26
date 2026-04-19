@@ -1214,8 +1214,6 @@ function AppContent() {
         .map(i => `${i.product.name} [${i.size}] (x${i.quantity})`)
         .join(' | ');
 
-      console.log("REFIXED SYNCING DATA:", { teeString, varsityString, bundleString });
-
       try {
         await fetch(`${API_BASE}/orders`, {
           method: 'POST',
