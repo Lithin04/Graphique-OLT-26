@@ -27,7 +27,7 @@ export const PRODUCTS: Product[] = [
     images: [
       "assets/back_jacket.png",
       "assets/front_jacket.png",
-      "assets/jacket_size.jpeg"
+      "assets/varsity_size.jpeg"
     ],
     category: "Apparel",
     color: "Burgundy",
