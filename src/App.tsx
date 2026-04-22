@@ -542,7 +542,7 @@ const StorefrontView = ({
   heroIndex: number,
   onHeroNext: () => void,
   onHeroPrev: () => void,
-  setHeroIndex: (i: number) => void,
+  setHeroIndex: React.Dispatch<React.SetStateAction<number>>,
   onProductClick: (p: Product) => void,
   isPlaying: boolean,
   setIsPlaying: (b: boolean) => void,
@@ -554,6 +554,7 @@ const StorefrontView = ({
   setIsMinimized: (b: boolean) => void,
   key?: string
 }) => {
+  const heroItems = [...PRODUCTS, ...BUNDLES];
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -564,41 +565,64 @@ const StorefrontView = ({
       {/* Hero Section */}
       <section className="relative h-[85vh] min-h-[700px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
-          <h2 className="font-headline font-black text-primary/5 uppercase tracking-tighter text-[20vw] -rotate-12 italic whitespace-nowrap select-none">2026 OLT</h2>
+          <h2 className="font-headline font-black text-primary/5 uppercase tracking-tighter text-[20vw] -rotate-12 italic whitespace-nowrap select-none">
+            2026 OLT
+          </h2>
         </div>
 
         <div className="container mx-auto px-6 relative z-10 flex flex-col items-center">
           <div className="relative w-full max-w-lg aspect-square flex items-center justify-center group">
             <AnimatePresence mode="wait">
-              <motion.img
+              <motion.div
                 key={heroIndex}
                 initial={{ opacity: 0, x: 20, rotate: -1 }}
                 animate={{ opacity: 1, x: 0, rotate: 0 }}
                 exit={{ opacity: 0, x: -20, rotate: 1 }}
-                transition={{ duration: 1.5, ease: "easeInOut" }} // Slower transition
-                alt={PRODUCTS[heroIndex].name}
-                className="w-full h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-3xl cursor-pointer"
-                src={PRODUCTS[heroIndex].image}
-                onClick={() => onProductClick(PRODUCTS[heroIndex])}
-              />
+                transition={{ duration: 1.5, ease: "easeInOut" }}
+                className="w-full h-full relative"
+              >
+                {/* Bundle Badge */}
+                {'items' in heroItems[heroIndex] && (
+                  <div className="absolute top-4 left-4 z-20 bg-primary text-on-primary px-4 py-1 rounded-full font-label text-[10px] tracking-[0.2em] uppercase shadow-lg">
+                    Bundle
+                  </div>
+                )}
+
+                <img
+                  alt={heroItems[heroIndex].name}
+                  className="w-full h-full object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-3xl cursor-pointer"
+                  src={heroItems[heroIndex].image}
+                  onClick={() => {
+                    const item = heroItems[heroIndex];
+                    // Use onAddBundle if it's a bundle, otherwise onProductClick
+                    'items' in item ? onAddBundle(item as any) : onProductClick(item as any);
+                  }}
+                />
+              </motion.div>
             </AnimatePresence>
 
-            {/* Float Arrows */}
+            {/* Float Arrows - Updated to use heroItems.length */}
             <button
-              onClick={(e) => { e.stopPropagation(); onHeroPrev(); }}
-              className="absolute -left-4 md:-left-12 top-1/2 -translate-y-1/2 p-4 bg-background/50 backdrop-blur-xl rounded-full border border-outline-variant/20 text-primary opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-on-primary shadow-xl"
+              onClick={(e) => {
+                e.stopPropagation();
+                setHeroIndex(prev => (prev - 1 + heroItems.length) % heroItems.length);
+              }}
+              className="absolute -left-4 md:-left-12 top-1/2 -translate-y-1/2 p-4 bg-background/50 backdrop-blur-xl rounded-full border border-outline-variant/20 text-primary opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-on-primary shadow-xl z-30"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); onHeroNext(); }}
-              className="absolute -right-4 md:-right-12 top-1/2 -translate-y-1/2 p-4 bg-background/50 backdrop-blur-xl rounded-full border border-outline-variant/20 text-primary opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-on-primary shadow-xl"
+              onClick={(e) => {
+                e.stopPropagation();
+                setHeroIndex(prev => (prev + 1) % heroItems.length);
+              }}
+              className="absolute -right-4 md:-right-12 top-1/2 -translate-y-1/2 p-4 bg-background/50 backdrop-blur-xl rounded-full border border-outline-variant/20 text-primary opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-on-primary shadow-xl z-30"
             >
               <ChevronRight className="w-6 h-6" />
             </button>
           </div>
 
-          <div className="mt-12 text-center max-w-2xl min-h-[140px] flex items-center justify-center"> {/* Added min-h and flex to stabilize positioning */}
+          <div className="mt-12 text-center max-w-2xl min-h-[140px] flex items-center justify-center">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`text-${heroIndex}`}
@@ -608,15 +632,19 @@ const StorefrontView = ({
                 transition={{ duration: 1.2, ease: "easeInOut" }}
                 className="space-y-4"
               >
-                <h2 className="font-headline text-3xl md:text-5xl text-primary font-bold tracking-tighter uppercase">{PRODUCTS[heroIndex].name}</h2>
-                <p className="font-body text-lg md:text-xl text-secondary tracking-wide italic leading-relaxed">{PRODUCTS[heroIndex].description}</p> {/* Slightly smaller font for description */}
+                <h2 className="font-headline text-3xl md:text-5xl text-primary font-bold tracking-tighter uppercase">
+                  {heroItems[heroIndex].name}
+                </h2>
+                <p className="font-body text-lg md:text-xl text-secondary tracking-wide italic leading-relaxed">
+                  {heroItems[heroIndex].description}
+                </p>
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* Dots Moved inside container flow to prevent overlap */}
+          {/* Dots Updated to heroItems length */}
           <div className="mt-8 flex gap-3 z-20">
-            {PRODUCTS.map((_, idx) => (
+            {heroItems.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setHeroIndex(idx)}
@@ -1157,9 +1185,10 @@ function AppContent() {
 
   // Hero Auto-scroll
   useEffect(() => {
+    const totalHeroItems = PRODUCTS.length + BUNDLES.length;
     const timer = setInterval(() => {
-      setHeroIndex(prev => (prev + 1) % PRODUCTS.length);
-    }, 8000); // Slower interval
+      setHeroIndex(prev => (prev + 1) % totalHeroItems);
+    }, 8000);
     return () => clearInterval(timer);
   }, []);
 
